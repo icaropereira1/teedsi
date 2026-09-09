@@ -1,0 +1,51 @@
+# ==========================================
+# 1. Base Quantitativa e Manipulação (Stack Original)
+# ==========================================
+pandas>=2.0.0
+numpy>=1.24.0
+polars>=0.19.0
+jupyter>=1.0.0
+
+# ==========================================
+# 2. Dados de Mercado e Financeiros
+# ==========================================
+yfinance>=0.2.0
+pandas-datareader>=0.10.0
+
+# ==========================================
+# 3. Estatística, Econometria e Indicadores
+# ==========================================
+statsmodels>=0.14.0
+scipy>=1.10.0
+arch>=6.0.0
+pandas-ta>=0.3.14
+# ta-lib (nota: a instalação via pip do ta-lib muitas vezes exige compilar C++)
+
+# ==========================================
+# 4. Machine Learning e Deep Learning
+# ==========================================
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+lightgbm>=4.1.0
+torch>=2.1.0  # pytorch
+
+# ==========================================
+# 5. Backtest
+# ==========================================
+vectorbt>=0.25.0
+backtrader>=1.9.78
+
+# ==========================================
+# 6. Visualização
+# ==========================================
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.18.0
+
+# ==========================================
+# 7. NOVOS: Agentes de IA e Web Scraping
+# ==========================================
+google-genai>=0.3.0      # Comunicação com o Gemini para o Agente Investigador
+pydantic>=2.5.0          # Para tipagem de dados e estruturação do schemas.py
+requests>=2.31.0         # Para conectar o tools_search.py com APIs externas
+python-dotenv>=1.0.0     # Para carregar sua GEMINI_API_KEY do arquivo .env
