@@ -49,3 +49,7 @@ google-genai>=0.3.0      # Comunicação com o Gemini para o Agente Investigador
 pydantic>=2.5.0          # Para tipagem de dados e estruturação do schemas.py
 requests>=2.31.0         # Para conectar o tools_search.py com APIs externas
 python-dotenv>=1.0.0     # Para carregar sua GEMINI_API_KEY do arquivo .env
+# ==========================================
+# 8. Testes
+# ==========================================
+pytest>=7.0.0            # a opção 'pythonpath' do pyproject exige pytest 7+

@@ -1,0 +1,10 @@
+# Sem seção [project]/build-backend de propósito: o pacote não precisa ser
+# instalado. 'pythonpath' faz o pytest achar 'src' a partir da raiz do repo,
+# e o agente roda com  py -m src.data.investigator
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "integration: chama a API do Gemini de verdade (requer GEMINI_API_KEY)",
+]
