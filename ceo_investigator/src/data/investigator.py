@@ -4,7 +4,7 @@ Fluxo: busca point-in-time -> monta contexto com IDs de fonte -> consulta o
 LLM (com cache em disco) -> valida o schema -> confere que toda citação
 existe no contexto entregue.
 
-Rode da raiz do repositório:  py -m src.data.investigator
+Rode de dentro de ceo_investigator/:  py -m src.data.investigator
 """
 
 import json

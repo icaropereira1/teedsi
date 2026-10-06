@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Dados de mercado (grandes, não versionados)
+data/raw/
+*/data/raw/
+
+# Cache de respostas do LLM
+.cache/
