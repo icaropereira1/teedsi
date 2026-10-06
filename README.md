@@ -18,8 +18,7 @@ resultado é negativo.
 
 ## Status
 
-🚧 **Em construção.** O repositório foi recém-criado e ainda não possui código. Este README descreve
-o escopo planejado e serve como roteiro de estudo.
+🚧 **Em construção.** Este README descreve o escopo planejado e serve como roteiro de estudo.
 
 ---
 
@@ -68,24 +67,31 @@ o escopo planejado e serve como roteiro de estudo.
 
 ---
 
-## Estrutura planejada
+## Estrutura
+
+O repositório contém um projeto por pasta. Cada projeto tem seu próprio `src/`, `tests/` e
+`pyproject.toml`; o ambiente Python (`requirements.txt`, `.venv`) é compartilhado na raiz.
 
 ```text
 teedsi/
-├── data/              # dados brutos e processados (não versionados)
-│   ├── raw/
-│   └── processed/
-├── notebooks/         # análises exploratórias e experimentos
-├── src/               # código reutilizável
-│   ├── data/          # coleta e limpeza
-│   ├── features/      # engenharia de features
-│   ├── models/        # treino e avaliação
-│   └── backtest/      # simulação de estratégias
-├── tests/             # testes automatizados
-└── reports/           # resultados, gráficos e conclusões
+├── ceo_investigator/  # agente que investiga o histórico de CEOs (Gemini + grounding)
+│   ├── src/
+│   └── tests/
+├── bigplayer/         # estudo da atuação de grandes players no mercado
+│   ├── src/
+│   └── data/
+├── data/              # dados compartilhados (não versionados)
+│   └── raw/           # WINN_M1, WDON_M1 (candles de 1 minuto de WIN e WDO)
+├── requirements.txt
+└── README.md
 ```
 
-*Nenhum desses diretórios existe ainda; eles serão criados conforme o estudo avança.*
+Para rodar os testes de um projeto, entre na pasta dele:
+
+```bash
+cd ceo_investigator
+python -m pytest
+```
 
 ---
 
@@ -115,7 +121,7 @@ cd teedsi
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 
-pip install -r requirements.txt   # ainda não criado
+pip install -r requirements.txt
 jupyter lab
 ```
 
