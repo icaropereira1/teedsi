@@ -69,6 +69,12 @@ Exploração: 575.144 barras · 17/09/2020 → 01/04/2025 · 1.038 dias. Hold-ou
 7. **Gaps intradia** são raros (21, todos até 2022). **Outliers**: 105 barras com |z| > 10 no retorno de 1 min. As 8 maiores caem em horários de abertura/notícia (09:30, 10:30, 11:00...) com volume alto, o que sugere evento real e não erro de dado (as demais 97 não foram inspecionadas uma a uma).
 8. **Rolagem:** não há salto sistemático óbvio; o |gap overnight| médio no 1º dia útil do mês é 0,45% vs ~0,3% nos demais (efeito leve). O maior gap (−4,2% em 29/07/2022) é explicado pelo buraco de 10 dias (item 3), não por rolagem.
 
+## Achados da análise de insights (notebook 02, WDO, exploração)
+Gerados por `notebooks/02_insights.py` (figuras em `reports/figures/02_*.png`).
+
+1. **Dividir o volume pela mediana do horário corrige demais.** O volume da tarde varia mais (desvio do log do volume de 0,73 às 17h contra 0,55 às 9h), então a razão `vol / mediana do mesmo minuto nos 20 pregões anteriores` joga os alertas para o fim do dia: 22% do top 1% cai às 17h (no volume bruto, 77% cai entre 9h e 12h). O **z-score do log do volume** (média e desvio do mesmo minuto nos 20 pregões anteriores, só passado) distribui os alertas quase por igual: de 8% a 13% por hora, contra 11% esperados ao acaso. Nesses minutos, o |retorno| mediano de 1 min é 7,1 bps contra 1,9 bps no geral (movimento no mesmo minuto, não previsão).
+2. **Lote médio alto, sozinho, marca minuto calmo, não big player.** No decil mais alto de `VOL/TICKVOL`, a mediana de negócios por minuto é 608 (contra 1.163 no geral) e o |retorno| mediano é 1,0 bp (contra 1,9). Lote alto aparece sobretudo quando há poucos negócios, e aí um único negócio grande pesa muito na média. O lote também varia com o horário (mediana de 2,95 às 9h e ~3,5 à tarde). Isso relativiza o item 5 acima: usar o lote como filtro junto com o volume normalizado, e normalizá-lo por horário também.
+
 ## Próximo passo (primeiro `[ ]` do checklist)
 Ainda na **Fase 1 — Dados** (ver `ARCHITECTURE.md`, seção 8):
 1. ~~Decisão sobre os buracos~~ — **decidido: ignorar** (ver "Decisões recentes").
