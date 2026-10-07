@@ -1,0 +1,7 @@
+# Sem seção [project]/build-backend de propósito (mesmo padrão do ceo_investigator):
+# 'pythonpath' faz o pytest achar 'src' a partir de bigplayer/.
+# Notebooks são scripts .py com células "# %%" e rodam de dentro de bigplayer/ ou da raiz do repo.
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

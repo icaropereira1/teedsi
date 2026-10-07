@@ -1,0 +1,4 @@
+# Dados derivados (parquet) ficam só locais; regenere com notebooks/00_carga_e_split.py
+data/interim/
+data/processed/
+data/holdout/

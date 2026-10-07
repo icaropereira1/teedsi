@@ -1,0 +1,12 @@
+# Configuração de dados e divisão exploração / hold-out.
+# ATENÇÃO: o corte do hold-out é decisão de projeto (registrada em docs/ARCHITECTURE.md, seção 9).
+# Não alterar depois de iniciada a EDA.
+
+[data]
+asset = "WDO"
+raw_file = "WDO$N_M1.csv"          # relativo a <raiz do repo>/data/raw/
+
+[split]
+# Hold-out = últimos 12 meses do WDO (dados terminam em 2026-04-01).
+# Tudo a partir desta data fica TRANCADO até a avaliação final (Fase 6).
+holdout_start = "2025-04-02"
