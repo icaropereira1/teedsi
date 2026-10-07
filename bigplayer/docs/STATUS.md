@@ -71,7 +71,7 @@ Exploração: 575.144 barras · 17/09/2020 → 01/04/2025 · 1.038 dias. Hold-ou
 
 ## Próximo passo (primeiro `[ ]` do checklist)
 Ainda na **Fase 1 — Dados** (ver `ARCHITECTURE.md`, seção 8):
-1. **Decisão do grupo sobre os buracos** (principalmente jun–set/2023). Opções: (a) usar só dados contínuos, descartando o trecho ou tudo antes dele; (b) buscar fonte alternativa para o intervalo. O hold-out (abr/2025 em diante) não é afetado.
+1. ~~Decisão sobre os buracos~~ — **decidido: ignorar** (ver "Decisões recentes").
 2. Construir o **calendário de pregão B3** (sessões 17:59/18:29, feriados) em `src/cleaning/`.
 3. Decidir o **tratamento da rolagem** do contínuo (efeito leve; talvez bastem marcar e excluir o 1º dia útil).
 4. Escrever o **dicionário de dados** em `docs/`.
@@ -79,7 +79,10 @@ Ainda na **Fase 1 — Dados** (ver `ARCHITECTURE.md`, seção 8):
 
 Só depois disso começa a **Fase 2** (features de fluxo e estudo de evento, com o **Gate 1**: o sinal existe?).
 
+## Decisões recentes (do grupo)
+- **Buraco de jun–set/2023 (e os outros buracos): ignorar.** Seguimos com os dados como estão. Consequência a lembrar: features com janela móvel (ex.: RVOL de N dias) atravessam o buraco; no cálculo, não misturar barras de lados diferentes de um buraco sem avisar.
+- **Nome dos arquivos:** `WDON_M1.rar` / `WINN_M1.rar` eram os originais compactados; os `.csv` extraídos (`WDO$N_M1.csv`, `WIN$N_M1.csv`) são os que usamos. Nada a renomear.
+- **Git:** a branch continua só local (sem push/PR) por enquanto.
+
 ## Perguntas em aberto
-- Como tratar o buraco de jun–set/2023 (item 3)?
-- Os arquivos se chamam `WDO$N_M1.csv` / `WIN$N_M1.csv` aqui, mas o README da raiz cita `WDON_M1` / `WINN_M1`. Qual nome vale?
-- Publicar a branch e abrir PR quando? (por ora, tudo local)
+- Nenhuma no momento. Próximo passo: calendário de pregão B3, rolagem e dicionário de dados (Fase 1).

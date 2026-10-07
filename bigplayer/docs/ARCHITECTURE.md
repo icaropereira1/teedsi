@@ -152,7 +152,7 @@ Regra: só se avança de fase quando os critérios de saída estão cumpridos. O
 - [x] Determinar o fuso horário real do timestamp (alinhar com o pregão B3) — é horário de Brasília
 - [x] Definir `VOL` vs `TICKVOL` e avaliar a utilidade de `SPREAD` — `SPREAD` descartado (não confiável)
 - [ ] Construir o calendário de pregão B3 (sessões, feriados)
-- [ ] **Decidir o tratamento dos buracos nos dados** (principalmente jun–set/2023, 77 dias úteis) — decisão do grupo
+- [x] Tratamento dos buracos nos dados (jun–set/2023 etc.) — decidido: ignorar
 - [ ] Tratar rolagem do contrato contínuo
 - [ ] Escrever o dicionário de dados em `docs/`
 - [x] Definir e **travar** a divisão exploração / hold-out (12 meses; `configs/split.toml`)
@@ -212,6 +212,7 @@ Regra: só se avança de fase quando os critérios de saída estão cumpridos. O
 | 2026-10-07 | Sem divisão de tarefas por pessoa; avanço por checklist de fases | Definido pela equipe |
 | 2026-10-07 | Dados atuais mantidos; outras fontes só se forem inconsistentes | Definido pela equipe |
 | 2026-10-07 | Hold-out = últimos 12 meses (a partir de 2025-04-02), trancado até a Fase 6 | Teste final honesto; EDA só vê a exploração |
+| 2026-10-07 | Buracos nos dados (jun–set/2023 etc.): ignorar | Decisão da equipe |
 | 2026-10-07 | `SPREAD` do CSV não será usado; custos modelados por fora | Valores inconsistentes entre anos (500 → 0/1) |
 
 ## 10. Riscos
