@@ -3,7 +3,7 @@
 > Leia este arquivo primeiro. Ele diz **em que pé o projeto está**, **o que cada commit trouxe** e **qual é o próximo passo**.
 > O plano completo e o checklist estão em [`ARCHITECTURE.md`](ARCHITECTURE.md) (seção 8). Atualize este arquivo a cada etapa concluída.
 
-**Última atualização:** 2026-10-07 · **Fase atual:** 1 — Dados (em andamento) · **Branch:** `feat/bigplayer-arquitetura` (local, ainda sem push/PR)
+**Última atualização:** 2026-10-07 · **Fase atual:** 1 — Dados (em andamento) · **Branch:** `feat/bigplayer-arquitetura` (publicada no GitHub; ainda sem PR para `main`)
 
 ## Em uma frase
 Estamos construindo um sistema que detecta atuação de grandes operadores (muitos contratos) no **mini dólar (WDO)** e segue a direção deles. Já está pronto: arquitetura, carga dos dados, split com hold-out trancado e a análise de qualidade dos dados. **Falta tratar os problemas encontrados nos dados e então partir para a EDA de indicadores.**
@@ -22,7 +22,7 @@ Estamos construindo um sistema que detecta atuação de grandes operadores (muit
 ## Como rodar (do zero)
 ```bash
 git clone git@github.com:icaropereira1/teedsi.git && cd teedsi
-git checkout feat/bigplayer-arquitetura          # quando a branch for publicada
+git checkout feat/bigplayer-arquitetura
 python -m venv .venv && source .venv/bin/activate
 pip install pandas numpy pyarrow matplotlib pytest   # mínimo; ou: pip install -r requirements.txt
 # colocar WDO$N_M1.csv em data/raw/ (fora do git)
@@ -82,7 +82,7 @@ Só depois disso começa a **Fase 2** (features de fluxo e estudo de evento, com
 ## Decisões recentes (do grupo)
 - **Buraco de jun–set/2023 (e os outros buracos): ignorar.** Seguimos com os dados como estão. Consequência a lembrar: features com janela móvel (ex.: RVOL de N dias) atravessam o buraco; no cálculo, não misturar barras de lados diferentes de um buraco sem avisar.
 - **Nome dos arquivos:** `WDON_M1.rar` / `WINN_M1.rar` eram os originais compactados; os `.csv` extraídos (`WDO$N_M1.csv`, `WIN$N_M1.csv`) são os que usamos. Nada a renomear.
-- **Git:** a branch continua só local (sem push/PR) por enquanto.
+- **Git:** branch publicada com push; o PR para `main` ainda não foi aberto (decidir quando).
 
 ## Perguntas em aberto
 - Nenhuma no momento. Próximo passo: calendário de pregão B3, rolagem e dicionário de dados (Fase 1).
