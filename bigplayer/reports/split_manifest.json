@@ -1,0 +1,18 @@
+{
+  "asset": "WDO",
+  "raw_file": "WDO$N_M1.csv",
+  "holdout_start": "2025-04-02",
+  "total_rows": 717232,
+  "exploration": {
+    "rows": 575144,
+    "start": "2020-09-17 14:08:00",
+    "end": "2025-04-01 18:29:00",
+    "days": 1038
+  },
+  "holdout": {
+    "rows": 142088,
+    "start": "2025-04-02 09:00:00",
+    "end": "2026-04-01 16:07:00",
+    "days": 250
+  }
+}
