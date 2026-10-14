@@ -1,0 +1,12 @@
+# Configuração de dados e divisão exploração / hold-out para o MINI ÍNDICE (WIN).
+# Mesma regra do WDO: hold-out = últimos 12 meses. ATENÇÃO: não alterar depois de iniciada a EDA.
+
+[data]
+asset = "WIN"
+raw_file = "WIN$N_M1.csv"          # relativo a <raiz do repo>/data/raw/
+tick = 5                           # tick do WIN: 5 pontos
+
+[split]
+# Dados terminam em 2026-09-25; mesma regra do WDO (corte = fim - 12 meses + 1 dia).
+# Tudo a partir desta data fica TRANCADO até a avaliação final (Fase 6).
+holdout_start = "2025-09-26"

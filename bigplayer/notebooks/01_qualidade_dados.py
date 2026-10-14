@@ -1,5 +1,5 @@
 # %% [markdown]
-# # 01 — Qualidade dos dados (WDO M1, somente exploração)
+# # 01 — Qualidade dos dados (M1, somente exploração; ativo = `BIGPLAYER_ASSET`, padrão WDO)
 #
 # **Objetivo:** descobrir problemas nos dados ANTES de qualquer feature ou modelo.
 # Perguntas:
@@ -27,9 +27,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.ingestion.loader import load_exploration
+from src.ingestion.loader import ASSET, FIGURES_DIR, load_config, load_exploration
 
-FIG = BP / "reports" / "figures"
+TICK = load_config()["data"]["tick"]
+FIG = FIGURES_DIR
 FIG.mkdir(parents=True, exist_ok=True)
 pd.set_option("display.width", 140)
 pd.set_option("display.max_columns", 30)
@@ -66,9 +67,9 @@ print("high < max(o,c,l):", int(bad_high.sum()))
 print("low  > min(o,c,h):", int(bad_low.sum()))
 print("preços <= 0     :", int(nonpos.sum()))
 
-# tick do WDO: os preços são múltiplos de 0,5?
-frac = ((df["close"] * 2) % 1).abs()
-print("preços fora do múltiplo de 0,5:", int((frac > 1e-6).sum()))
+# os preços são múltiplos do tick do ativo (WDO 0,5; WIN 5)?
+frac = ((df["close"] / TICK) % 1).abs()
+print(f"preços fora do múltiplo de {TICK}:", int((frac > 1e-6).sum()))
 
 # %% [markdown]
 # ## 3. Volumes e spread

@@ -5,6 +5,7 @@
 [data]
 asset = "WDO"
 raw_file = "WDO$N_M1.csv"          # relativo a <raiz do repo>/data/raw/
+tick = 0.5                         # tick do WDO: 0,5 ponto
 
 [split]
 # Hold-out = últimos 12 meses do WDO (dados terminam em 2026-04-01).

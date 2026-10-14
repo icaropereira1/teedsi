@@ -1,0 +1,18 @@
+{
+  "asset": "WIN",
+  "raw_file": "WIN$N_M1.csv",
+  "holdout_start": "2025-09-26",
+  "total_rows": 757716,
+  "exploration": {
+    "rows": 617846,
+    "start": "2020-10-15 11:49:00",
+    "end": "2025-09-25 18:24:00",
+    "days": 1119
+  },
+  "holdout": {
+    "rows": 139870,
+    "start": "2025-09-26 09:00:00",
+    "end": "2026-09-25 18:24:00",
+    "days": 249
+  }
+}

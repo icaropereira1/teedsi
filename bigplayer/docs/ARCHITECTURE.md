@@ -151,20 +151,20 @@ Regra: só se avança de fase quando os critérios de saída estão cumpridos. O
 - [x] Perfilar os dados: período, gaps, duplicatas, outliers, barras sem negócio — `notebooks/01`
 - [x] Determinar o fuso horário real do timestamp (alinhar com o pregão B3) — é horário de Brasília
 - [x] Definir `VOL` vs `TICKVOL` e avaliar a utilidade de `SPREAD` — `SPREAD` descartado (não confiável)
-- [ ] Construir o calendário de pregão B3 (sessões, feriados)
-- [x] Tratamento dos buracos nos dados (jun–set/2023 etc.) — decidido: ignorar
-- [ ] Tratar rolagem do contrato contínuo
-- [ ] Escrever o dicionário de dados em `docs/`
+- [x] Construir o calendário de pregão B3 (sessões, feriados) — `src/cleaning/calendar.py`
+- [x] Tratamento dos buracos nos dados (jun–set/2023 etc.) — decidido: ignorar; **marcados** (não removidos) em `src/cleaning/holes.py`
+- [x] Tratar rolagem do contrato contínuo — marcada (`roll_day`); nunca usar retorno que cruze a abertura desse dia
+- [x] Escrever o dicionário de dados em `docs/` — `docs/DICIONARIO_DADOS.md`
 - [x] Definir e **travar** a divisão exploração / hold-out (12 meses; `configs/split.toml`)
 
-**Saída:** dataset limpo, versionado e documentado; hold-out separado.
+**Saída:** dataset limpo (`data/interim/<ativo>_m1_limpo.parquet`, notebook 04), documentado; hold-out separado.
 
 ### Fase 2 — Hipótese de sinal 🚦
-- [ ] Definir features de fluxo institucional (volume anômalo por horário, tamanho médio do negócio `VOL/TICKVOL`, esforço × resultado, absorção, etc.)
-- [ ] Definir operacionalmente o "evento de big player" (regra explícita e parametrizada)
-- [ ] Estudo de evento: retorno futuro condicional ao evento, em vários horizontes
-- [ ] Testar significância estatística e comparar com eventos aleatórios (baseline)
-- [ ] **Gate 1:** há sinal? Se não, revisar features/definição ou decidir buscar outro dado (tick a tick)
+- [x] Definir features de fluxo institucional (volume anômalo por horário, tamanho médio do negócio `VOL/TICKVOL`, esforço × resultado, absorção, etc.)
+- [x] Definir operacionalmente o "evento de big player" (regra explícita e parametrizada)
+- [x] Estudo de evento: retorno futuro condicional ao evento, em vários horizontes
+- [x] Testar significância estatística e comparar com eventos aleatórios (baseline)
+- [ ] **Gate 1:** há sinal? *(estudo rodado em 14/10/2026: não, nas 3 definições pré-registradas; decisão do grupo pendente)*  Se não, revisar features/definição ou decidir buscar outro dado (tick a tick)
 
 **Saída:** evidência (ou ausência) de que o evento prevê o preço.
 
@@ -214,6 +214,9 @@ Regra: só se avança de fase quando os critérios de saída estão cumpridos. O
 | 2026-10-07 | Hold-out = últimos 12 meses (a partir de 2025-04-02), trancado até a Fase 6 | Teste final honesto; EDA só vê a exploração |
 | 2026-10-07 | Buracos nos dados (jun–set/2023 etc.): ignorar | Decisão da equipe |
 | 2026-10-07 | `SPREAD` do CSV não será usado; custos modelados por fora | Valores inconsistentes entre anos (500 → 0/1) |
+| 2026-10-14 | Gate 1, rodada 1: **sem sinal** (E1, E2, E3 em WDO e WIN; 0 de 15 testes passam por ativo). Seguir com rodada 2 de definições pré-registradas | Ver `docs/RESULTADO_GATE1_RODADA1.md`; decisão do grupo |
+| 2026-10-14 | Gate 1, rodada 2: **sem passe** (A1, P1, X1 no WDO; 0 de 15). A1 em 15 min é candidato a confirmação (p = 0,0145, não corrigido) | Ver `docs/RESULTADO_GATE1_RODADA2.md`; WIN não rodado (regra pré-registrada) |
+| 2026-10-14 | Confirmação do A1 (15 min) no WIN: **não confirma** (+0,95 bps, p = 0,176). **Gate 1 em M1: no-go** | Ver `docs/RESULTADO_CONFIRMACAO_A1_WIN.md`; próximo passo é decisão do grupo (tick a tick, nova hipótese ou encerrar) |
 
 ## 10. Riscos
 
