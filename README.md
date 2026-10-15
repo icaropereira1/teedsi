@@ -125,6 +125,8 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
+Para contribuir (branches, PR para a `main` e revisão), leia o [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ---
 
 ## Princípios de trabalho
