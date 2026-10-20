@@ -9,6 +9,8 @@
 # - `data/holdout/wdo_m1_holdout.parquet` (TRANCADO)
 # - `reports/split_manifest.json` (resumo versionado no git)
 #
+# **Outro ativo:** `BIGPLAYER_ASSET=WIN python notebooks/00_carga_e_split.py` (config em `configs/split_win.toml`).
+#
 # **Como rodar:** de dentro de `bigplayer/`, `python notebooks/00_carga_e_split.py`,
 # ou célula a célula no VS Code / Jupyter (jupytext).
 
@@ -25,7 +27,7 @@ sys.path.insert(0, str(BP))
 import pandas as pd
 
 from src.ingestion.loader import (
-    EXPLORATION_FILE, HOLDOUT_FILE, REPO_DIR, load_config, read_raw_csv,
+    EXPLORATION_FILE, HOLDOUT_FILE, MANIFEST_FILE, REPO_DIR, load_config, read_raw_csv,
 )
 from src.ingestion.split import split_exploration_holdout
 
@@ -97,8 +99,8 @@ manifest = {
         "days": int(holdout["ts"].dt.normalize().nunique()),
     },
 }
-(BP / "reports").mkdir(exist_ok=True)
-(BP / "reports" / "split_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+MANIFEST_FILE.parent.mkdir(exist_ok=True)
+MANIFEST_FILE.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 print(json.dumps(manifest, indent=2, ensure_ascii=False))
 
 # %% [markdown]

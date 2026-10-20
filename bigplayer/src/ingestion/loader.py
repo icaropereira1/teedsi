@@ -5,6 +5,7 @@ O hold-out só é aberto na avaliação final, de forma explícita.
 """
 from __future__ import annotations
 
+import os
 import tomllib
 from pathlib import Path
 
@@ -12,12 +13,21 @@ import pandas as pd
 
 BIGPLAYER_DIR = Path(__file__).resolve().parents[2]
 REPO_DIR = BIGPLAYER_DIR.parent
-CONFIG_PATH = BIGPLAYER_DIR / "configs" / "split.toml"
 INTERIM_DIR = BIGPLAYER_DIR / "data" / "interim"
 HOLDOUT_DIR = BIGPLAYER_DIR / "data" / "holdout"
 
-EXPLORATION_FILE = INTERIM_DIR / "wdo_m1_exploracao.parquet"
-HOLDOUT_FILE = HOLDOUT_DIR / "wdo_m1_holdout.parquet"
+# Ativo escolhido pela variável de ambiente BIGPLAYER_ASSET (WDO por padrão; WIN para o mini índice).
+ASSET = os.environ.get("BIGPLAYER_ASSET", "WDO").upper()
+_CONFIGS = {"WDO": "split.toml", "WIN": "split_win.toml"}
+CONFIG_PATH = BIGPLAYER_DIR / "configs" / _CONFIGS[ASSET]
+
+EXPLORATION_FILE = INTERIM_DIR / f"{ASSET.lower()}_m1_exploracao.parquet"
+HOLDOUT_FILE = HOLDOUT_DIR / f"{ASSET.lower()}_m1_holdout.parquet"
+CLEAN_FILE = INTERIM_DIR / f"{ASSET.lower()}_m1_limpo.parquet"   # exploração + marcações (notebook 04)
+
+# Figuras do WDO ficam na raiz de reports/figures (histórico); as dos demais ativos, em subpasta.
+FIGURES_DIR = BIGPLAYER_DIR / "reports" / "figures" / ("" if ASSET == "WDO" else ASSET.lower())
+MANIFEST_FILE = BIGPLAYER_DIR / "reports" / ("split_manifest.json" if ASSET == "WDO" else f"split_manifest_{ASSET.lower()}.json")
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -42,6 +52,13 @@ def load_exploration() -> pd.DataFrame:
             f"{EXPLORATION_FILE} não existe. Rode notebooks/00_carga_e_split.py primeiro."
         )
     return pd.read_parquet(EXPLORATION_FILE)
+
+
+def load_clean() -> pd.DataFrame:
+    """Exploração já marcada (calendário, buracos, rolagem, `usable`). Use `usable` para filtrar."""
+    if not CLEAN_FILE.exists():
+        raise FileNotFoundError(f"{CLEAN_FILE} não existe. Rode notebooks/04_dataset_limpo.py primeiro.")
+    return pd.read_parquet(CLEAN_FILE)
 
 
 def load_holdout(*, i_understand_this_burns_the_holdout: bool = False) -> pd.DataFrame:
