@@ -117,12 +117,43 @@ percentuais). Tabela completa (todos os horários, com mínima, mediana e máxim
      (item 3), então o pico das 10:00 mexe mais que um minuto que também já mexia.
    - Nos outros horários do WDO, a mediana mostra T−1 e T iguais, mas isso é em parte efeito dos degraus
      de 1/3 de tick. A comparação dia a dia fica entre 49% e 53%.
-5. **Os extremos parecem ser dias de notícia dos EUA.** As maiores variações no minuto do pico (WDO −36
-   pontos e WIN +725 em 03/05/2024 às 9:30; WIN +1.047 pontos em 22/08/2025 às 11:00; WDO −32,5 e WIN
-   +670 em 10/08/2022 às 9:30) caem em datas que parecem ser de payroll, inflação (CPI) e discurso do
-   presidente do Fed. *A coincidência com o calendário dos EUA ainda não foi conferida dia a dia.* No
-   gráfico `extremos_<ativo>.png` dá para ver o tamanho deles: a mediana fica em ~0 e as pontas vêm de
-   poucos dias.
+5. **Os extremos são divulgações dos EUA, todos eles.** As 10 maiores variações no minuto do pico de cada
+   ativo caem exatamente no minuto de uma divulgação americana, convertida para Brasília (tabela abaixo).
+   No gráfico `extremos_<ativo>.png` dá para ver o tamanho deles: a mediana fica em ~0 e as pontas vêm
+   desses poucos dias.
+
+   **Por que às vezes 9:30 e às vezes 10:30:** os dados dos EUA saem às 8:30 de Nova York. O Brasil não tem
+   horário de verão desde 2019, e os EUA têm. Com o horário de verão americano (de março a novembro), 8:30
+   em Nova York é 9:30 em Brasília. Fora dele, é 10:30. Todos os extremos seguem essa regra.
+
+### Os 10 maiores extremos de cada ativo (conferidos)
+
+| Data | Horário (Brasília) | WDO (pontos) | WIN (pontos) | Evento nos EUA | Horário em Nova York |
+|---|---|---|---|---|---|
+| 13/07/2022 | 9:30 | +22,2 | | CPI de junho/2022 | 8:30 (verão) |
+| 05/08/2022 | 9:30 | +27,3 | | Payroll de julho/2022 | 8:30 (verão) |
+| 10/08/2022 | 9:30 | −32,5 | +670 | CPI de julho/2022 | 8:30 (verão) |
+| 13/09/2022 | 9:30 | +26,2 | −545 | CPI de agosto/2022 | 8:30 (verão) |
+| 13/10/2022 | 9:30 | | −580 | CPI de setembro/2022 | 8:30 (verão) |
+| 10/11/2022 | 10:30 | −27,3 | | CPI de outubro/2022 | 8:30 (inverno) |
+| 13/12/2022 | 10:30 | −25,5 | | CPI de novembro/2022 | 8:30 (inverno) |
+| 03/11/2023 | 9:30 | −23,0 | | Payroll de outubro/2023 | 8:30 (verão) |
+| 14/11/2023 | 10:30 | −23,2 | +537 | CPI de outubro/2023 | 8:30 (inverno) |
+| 10/04/2024 | 9:30 | | −568 | CPI de março/2024 | 8:30 (verão) |
+| 03/05/2024 | 9:30 | −36,0 | +725 | Payroll de abril/2024 | 8:30 (verão) |
+| 07/06/2024 | 9:30 | | −580 | Payroll de maio/2024 | 8:30 (verão) |
+| 18/09/2024 | 15:00 | −27,0 | | Decisão do Fed (FOMC): corte de 0,50 p.p. | 14:00 (verão) |
+| 12/02/2025 | 10:30 | | −535 | CPI de janeiro/2025 | 8:30 (inverno) |
+| 22/08/2025 | 11:00 | | +1.047 | Discurso de Powell em Jackson Hole | 10:00 (verão) |
+| 05/09/2025 | 9:30 | | +573 | Payroll de agosto/2025 | 8:30 (verão) |
+
+Uma célula vazia quer dizer que o dia não está entre os 10 maiores daquele ativo. O WDO não tem dados depois
+de 01/04/2025 (o resto é hold-out). CPI = inflação ao consumidor; payroll = relatório de emprego
+(Employment Situation). Fontes: datas e horário de embargo (8:30 ET) no arquivo de divulgações do BLS
+([CPI](https://www.bls.gov/bls/news-release/cpi.htm), [emprego](https://www.bls.gov/bls/news-release/empsit.htm));
+[comunicado do FOMC de 18/09/2024, 14:00 EDT](https://www.federalreserve.gov/newsevents/pressreleases/monetary20240918a.htm);
+[discurso de Powell em 22/08/2025](https://www.federalreserve.gov/newsevents/speech/powell20250822a.htm), às 10:00 ET
+segundo a [agenda da Calculated Risk](https://www.calculatedriskblog.com/2025/08/friday-fed-chair-powell-speech-at.html?m=1).
 
 ### O que isto NÃO diz (passo 1)
 - Não diz quem negociou: o candle não mostra o agressor.
