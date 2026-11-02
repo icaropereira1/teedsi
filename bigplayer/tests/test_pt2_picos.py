@@ -70,6 +70,7 @@ def test_resumo_por_horario():
     assert row["pregoes"] == 4
     assert (row["antes_min"], row["antes_mediana"], row["antes_max"], row["antes_mediana_abs"]) == (-4, 1.5, 3, 2.5)
     assert (row["pico_min"], row["pico_mediana"], row["pico_max"], row["pico_mediana_abs"]) == (-6, 3, 9, 4.5)
+    assert (row["antes_sobe_pct"], row["antes_cai_pct"]) == (75, 25)
     # |T−1| contra |T−2|: 4>1, 1<5, 2=2 (empate fica fora), 3>1 → 2 de 3
     assert row["antes_maior_pct"] == pytest.approx(200 / 3)
     # |T| contra |T−1|: 3<4, 6>1, 9>2, 3=3 (empate fica fora) → 2 de 3

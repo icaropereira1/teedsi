@@ -68,6 +68,7 @@ def _larger_pct(a: pd.Series, b: pd.Series) -> tuple[float, float]:
 def summarize_peaks(window: pd.DataFrame) -> pd.DataFrame:
     """Por horário de pico:
     - para T−1 e T: mínima, mediana e máxima da variação (com sinal) e mediana do |variação|;
+    - `antes_sobe_pct` / `antes_cai_pct`: % dos pregões em que o preço médio subiu / caiu no minuto T−1;
     - `antes_maior_pct`: % dos pregões em que o minuto T−1 mexeu mais que o T−2 (empates fora);
     - `pico_maior_pct`: % dos pregões em que o minuto T mexeu mais que o T−1 (empates fora);
     - margens de erro de 95% dessas duas porcentagens. 50% = os dois minutos mexem igual."""
@@ -79,6 +80,8 @@ def summarize_peaks(window: pd.DataFrame) -> pd.DataFrame:
             row[f"{label}_mediana"] = g[col].median()
             row[f"{label}_max"] = g[col].max()
             row[f"{label}_mediana_abs"] = g[col].abs().median()
+        row["antes_sobe_pct"] = 100 * (g["var_antes"] > 0).mean()
+        row["antes_cai_pct"] = 100 * (g["var_antes"] < 0).mean()
         row["antes_maior_pct"], row["antes_margem_pct"] = _larger_pct(g["var_antes"], g["var_antes2"])
         row["pico_maior_pct"], row["pico_margem_pct"] = _larger_pct(g["var_pico"], g["var_antes"])
         rows.append(row)

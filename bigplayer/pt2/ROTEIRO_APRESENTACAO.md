@@ -12,10 +12,11 @@ A divisão de quem fala é só uma **sugestão**; ajustem entre vocês. O import
 | 1 | O que mudou desde a última apresentação | — | 1 min | Ícaro |
 | 2 | Os dados | slide "Os dados" da apresentação anterior | 1,5 min | Camargo |
 | 3 | O preço ao lado do volume | `perfil_win.png` (e `perfil_wdo.png`) | 2,5 min | Ícaro |
-| 4 | O minuto antes e o minuto do pico | `picos_win.png` (e `picos_wdo.png`) | 3,5 min | Ícaro |
-| 5 | Os extremos são dados dos EUA | `extremos_win.png` + tabela do README | 2 min | João |
-| 6 | Depois do pico: a expectativa de preço | `faixa_win.png` e `continua_win.png` | 3 min | João |
-| 7 | Conclusão e próximo passo | — | 1,5 min | Camargo |
+| 4 | 1 minuto antes do pico | `slide_minuto_antes.png` (slide pronto, WDO e WIN) | 1,5 min | Ícaro |
+| 5 | O minuto do pico | `picos_win.png` (e `picos_wdo.png`) | 2,5 min | Ícaro |
+| 6 | Os extremos são dados dos EUA | `extremos_win.png` + tabela do README | 2 min | João |
+| 7 | Depois do pico: a expectativa de preço | `faixa_win.png` e `continua_win.png` | 3 min | João |
+| 8 | Conclusão e próximo passo | — | 1 min | Camargo |
 
 Mostrem o WIN nos slides: o efeito aparece mais nele. Deixem o WDO de reserva, para o caso de perguntas.
 
@@ -48,20 +49,33 @@ Mostrem o WIN nos slides: o efeito aparece mais nele. Deixem o WDO de reserva, p
 - **Gráfico de baixo:** o preço anda mais nos mesmos horários em que o volume tem pico (as "agulhas"
   coincidem).
 
-## 4. O minuto antes e o minuto do pico (3,5 min) — `picos_win.png`
+## 4. 1 minuto antes do pico (1,5 min) — `slide_minuto_antes.png`
+- É o pedido direto do professor: quanto o preço varia 1 minuto antes de cada pico, com mínima, mediana e
+  máxima. Usamos os 5 picos que aparecem nos dois ativos: 9:30, 10:00, 10:30, 11:00 e 12:00.
+- Como ler: a **linha fina** vai da mínima à máxima, a **barra grossa** é o tamanho típico (mediana do
+  movimento, sem o sinal) e o **ponto** é a mediana com sinal.
+- O que dizer:
+  - **A mediana é ~0 em todos:** no minuto antes, o preço não escolhe lado. Sobe em 45% a 50% dos dias e cai
+    em 45% a 52%. O resto dos dias fica parado.
+  - **O tamanho típico é pequeno:** ±1 a ±1,5 ponto no WDO e ±22 a ±32 pontos no WIN.
+  - **As pontas são poucos dias atípicos:** no WDO, a mínima vai até −21,7 pontos (antes das 9:30); no WIN,
+    até −307 (antes das 12:00).
+- Não digam que as pontas *deste* slide são notícias dos EUA: isso foi conferido para o minuto do pico (slide
+  6), não para o minuto antes.
+
+## 5. O minuto do pico (2,5 min) — `picos_win.png`
 - **Gráfico de cima:** quanto o preço anda (mediana, sem o sinal) no minuto antes (cinza) e no minuto do pico
   (laranja). Exemplo: no WIN às 10:00, de 23 pontos para 38.
 - **Gráfico de baixo:** a comparação dia a dia, ou seja, em que % dos dias o minuto andou mais que o anterior.
   50% = andaram igual. A barrinha é a margem de erro (±3 pontos percentuais).
 - O que dizer:
-  1. **Antes do pico, o preço não tem direção.** No minuto antes, ele sobe em 49% dos dias e cai em 49% (WIN).
-  2. **Antes do pico, o minuto é comum**, com uma exceção: **às 10:00, o 9:59 já mexe mais** que o 9:58, nos
-     dois ativos, e o volume também já sobe nesse minuto.
-  3. **No minuto do pico, o preço anda mais:** no WIN, em 15 dos 17 horários, de 53% a 65% dos dias (o maior
-     é às 10:00). No WDO, em 7 dos 17.
-- Se perguntarem pela máxima e pela mínima: estão no slide seguinte e nos CSVs.
+  1. **No minuto do pico, o preço anda mais que no minuto antes:** no WIN, em 15 dos 17 horários, de 53% a
+     65% dos dias (o maior é às 10:00). No WDO, em 7 dos 17.
+  2. **A única antecipação é às 10:00:** o 9:59 já mexe mais que o 9:58, nos dois ativos, e o volume também
+     já sobe nesse minuto. Nos outros horários, o minuto antes é um minuto comum (slide anterior).
+- Se perguntarem pela máxima e pela mínima do minuto do pico: estão no slide seguinte e nos CSVs.
 
-## 5. Os extremos são dados dos EUA (2 min) — `extremos_win.png`
+## 6. Os extremos são dados dos EUA (2 min) — `extremos_win.png`
 - A mediana fica em ~0, e as pontas vêm de poucos dias.
 - **Conferimos os 10 maiores de cada ativo: todos caem no minuto exato de uma divulgação americana.**
   São inflação (CPI), emprego (payroll), a decisão do Fed de 18/09/2024 e o discurso de Powell em 22/08/2025.
@@ -71,7 +85,7 @@ Mostrem o WIN nos slides: o efeito aparece mais nele. Deixem o WDO de reserva, p
   o Brasil não tem mais. Com o horário de verão americano, 8:30 lá é 9:30 aqui; sem ele, é 10:30.
 - A tabela completa, com as fontes (BLS e Fed), está no README.
 
-## 6. Depois do pico: a expectativa de preço (3 min) — `faixa_win.png` e `continua_win.png`
+## 7. Depois do pico: a expectativa de preço (3 min) — `faixa_win.png` e `continua_win.png`
 - A tabela de expectativa funciona como consulta: ativo + horário + prazo → chance de subir, mediana e faixa.
 - **Exemplo para falar:** WIN, pico das 10:30, 15 minutos depois. O preço sobe em 49% dos dias e cai em 51%,
   a mediana é −3 pontos, e 80% dos dias terminam entre −378 e +425 pontos. Num minuto comum das 10h, a faixa
@@ -85,7 +99,7 @@ Mostrem o WIN nos slides: o efeito aparece mais nele. Deixem o WDO de reserva, p
   - **Depois do pico, o preço se comporta igual a um minuto comum.**
 - Frase para fechar o slide: **o pico muda o tamanho do movimento, não a direção.**
 
-## 7. Conclusão e próximo passo (1,5 min)
+## 8. Conclusão e próximo passo (1 min)
 - **Antes do pico:** sem direção. A única antecipação é o 9:59, que já mexe mais antes das 10:00.
 - **No pico:** o preço anda mais, e os maiores movimentos são dados dos EUA.
 - **Depois do pico:** sem direção previsível. A faixa fica um pouco mais larga, mas para cima ou para baixo

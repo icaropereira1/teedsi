@@ -23,6 +23,8 @@ Saídas: `pt2/reports/picos_<ativo>.csv` (passo 1), `pt2/reports/depois_<ativo>.
 figuras em `pt2/reports/figures/`.
 O código das contas está em `pt2/picos.py`, e cada função tem a definição escrita.
 Roteiro da apresentação de 03/11/2026: `pt2/ROTEIRO_APRESENTACAO.md`.
+Slide pronto do minuto antes dos 5 picos (9:30, 10:00, 10:30, 11:00 e 12:00): `python pt2/02_slide_minuto_antes.py`
+→ `pt2/reports/figures/slide_minuto_antes.png`.
 
 ## Como cada número é calculado
 
