@@ -29,6 +29,7 @@ O código das contas está em `pt2/picos.py`, e cada função tem a definição 
 |---|---|
 | **Dados** | Candles de 1 minuto, só o período de exploração (WDO: 18/09/2020 a 01/04/2025, 1.034 pregões; WIN: 15/10/2020 a 25/09/2025, 1.118 pregões). Só barras `usable` (dentro da sessão, sem pregão parcial). O último ano de cada ativo (hold-out) não é usado. |
 | **Preço médio do minuto** | `(máxima + mínima + fechamento) / 3`. É o "preço típico" da barra. Com candle de 1 minuto não dá para ter o preço médio de cada negócio. |
+| **Preço médio por minuto** (gráfico) | Preço médio do minuto **menos** o preço médio do 1º minuto com negócio do mesmo pregão, em pontos. Mostra onde o preço está em relação à abertura daquele dia. A média do preço em si não serviria: o WDO foi de ~5.000 a ~6.000 pontos no período, então a média misturaria anos diferentes. |
 | **Variação do minuto** | Preço médio do minuto **menos** o preço médio do minuto anterior, em **pontos**. Só é calculada quando o minuto anterior existe, é exatamente 1 minuto antes e é do mesmo pregão. Assim, nunca compara um dia com o outro. |
 | **Horários de pico** | Todo :00 e :30 de 9:00 a 17:30 (horários fixos). Nem todos têm pico de volume: no WDO, 16:30, 17:00 e 17:30 ficam abaixo do volume da tarde, e no WIN, 17:30 (coluna `volume_x_tarde`). |
 | **T−2, T−1 e T** | Para o pico das 10:00: T−2 é a variação do minuto 9:58, T−1 a do 9:59 e T a do 10:00. No passo 1 só entram os pregões que têm as três. |
@@ -65,10 +66,12 @@ podem vir de distribuições diferentes. A comparação dia a dia (% mexeu mais)
 ## Passo 1 — o minuto antes do pico e o minuto do pico
 
 Figuras:
-- `perfil_<ativo>.png`: em cima, o volume por minuto (o mesmo gráfico dos slides). Embaixo, quanto o
-  preço médio anda em cada minuto do dia.
+- `perfil_<ativo>.png`: o preço ao lado do volume, minuto a minuto. Em cima, o volume (o mesmo gráfico dos
+  slides). No meio, o preço médio em relação à abertura do dia (mediana e faixa de 80% dos pregões). Embaixo,
+  quanto o preço médio anda em cada minuto.
 - `picos_<ativo>.png`: em cima, a mediana do \|variação\| no minuto antes (T−1) e no minuto do pico (T).
   Embaixo, a comparação dia a dia, com margem de erro.
+- `extremos_<ativo>.png`: máxima, mínima e mediana da variação (com sinal) no minuto antes e no minuto do pico.
 
 ### Mediana do |variação| em pontos e comparação dia a dia
 
@@ -88,10 +91,15 @@ Figuras:
 percentuais). Tabela completa (todos os horários, com mínima, mediana e máxima com sinal) nos CSVs.
 
 ### Leitura
-1. **No minuto antes do pico, o preço não tem direção.** A mediana com sinal é praticamente 0 em
+1. **Ao longo do dia, o preço não tem direção típica, mas a incerteza cresce mais rápido de manhã.** No
+   gráfico do preço médio por minuto, a mediana fica colada no zero o dia todo (WDO: −1,5 a +2,2 pontos;
+   WIN: −55 a +85 pontos, contra faixas de ±60 e ±1.550 no fim do dia). A faixa de 80% dos pregões abre como
+   um funil, e às 12:00 já tem 73% da largura do fim do dia nos dois ativos. É o mesmo período em que o
+   volume é maior.
+2. **No minuto antes do pico, o preço não tem direção.** A mediana com sinal é praticamente 0 em
    todos os horários (WDO: −0,17 a +0,17 ponto; WIN: −1,67 a +1,67 ponto, ou seja, ±1/3 de tick).
    Somando todos os horários, o minuto antes sobe em 47% dos casos e cai em 47% no WDO (49% e 49% no WIN).
-2. **Em tamanho, o minuto antes quase sempre é um minuto comum, com uma exceção: 10:00.** Comparando
+3. **Em tamanho, o minuto antes quase sempre é um minuto comum, com uma exceção: 10:00.** Comparando
    T−1 com T−2 dia a dia, o resultado fica perto de 50% na maioria dos horários. Fora da margem:
    - **10:00, nos dois ativos:** o minuto 9:59 mexe mais que o 9:58 em 53% dos pregões no WDO e em
      54% no WIN. O volume também já sobe às 9:59 (WDO: de 2,59 para 2,85 vezes a tarde; WIN: de 1,16 para 1,31). É a única exceção que aparece nos dois ativos.
@@ -100,19 +108,21 @@ percentuais). Tabela completa (todos os horários, com mínima, mediana e máxim
 
    São 34 comparações (17 horários × 2 ativos), e cerca de 2 sairiam da margem só por acaso. Por isso só o
    10:00, que se repete nos dois ativos, merece atenção.
-3. **O preço anda mais no minuto do pico do que no minuto antes.**
+4. **O preço anda mais no minuto do pico do que no minuto antes.**
    - **WIN:** em 15 de 17 horários o minuto do pico mexe mais em mais da metade dos pregões, acima da
      margem (de 53% a 65%; o maior é às 10:00). As exceções, 12:30 e 13:30, ficam dentro da margem.
    - **WDO:** acima da margem em 7 de 17 horários (9:30, 10:30, 11:00, 11:30, 14:00, 14:30 e 17:30),
      com 53% a 61%.
    - O WDO às 10:00 fica em 52%, dentro da margem. Uma explicação provável é que o 9:59 já está agitado
-     (item 2), então o pico das 10:00 mexe mais que um minuto que também já mexia.
+     (item 3), então o pico das 10:00 mexe mais que um minuto que também já mexia.
    - Nos outros horários do WDO, a mediana mostra T−1 e T iguais, mas isso é em parte efeito dos degraus
      de 1/3 de tick. A comparação dia a dia fica entre 49% e 53%.
-4. **Os extremos parecem ser dias de notícia dos EUA.** As maiores variações no minuto do pico (WDO −36
+5. **Os extremos parecem ser dias de notícia dos EUA.** As maiores variações no minuto do pico (WDO −36
    pontos e WIN +725 em 03/05/2024 às 9:30; WIN +1.047 pontos em 22/08/2025 às 11:00; WDO −32,5 e WIN
    +670 em 10/08/2022 às 9:30) caem em datas que parecem ser de payroll, inflação (CPI) e discurso do
-   presidente do Fed. *A coincidência com o calendário dos EUA ainda não foi conferida dia a dia.*
+   presidente do Fed. *A coincidência com o calendário dos EUA ainda não foi conferida dia a dia.* No
+   gráfico `extremos_<ativo>.png` dá para ver o tamanho deles: a mediana fica em ~0 e as pontas vêm de
+   poucos dias.
 
 ### O que isto NÃO diz (passo 1)
 - Não diz quem negociou: o candle não mostra o agressor.

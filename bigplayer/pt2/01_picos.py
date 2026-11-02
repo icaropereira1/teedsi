@@ -7,7 +7,8 @@
 #
 # **Entrada:** `data/interim/<ativo>_m1_limpo.parquet` (só exploração; só barras `usable`).
 # Gerar antes com `notebooks/00_carga_e_split.py` e `notebooks/04_dataset_limpo.py`.
-# **Saídas:** `pt2/reports/{picos,depois}_<ativo>.csv`, `pt2/reports/figures/{perfil,picos,continua,faixa}_<ativo>.png`.
+# **Saídas:** `pt2/reports/{picos,depois}_<ativo>.csv`,
+# `pt2/reports/figures/{perfil,picos,extremos,continua,faixa}_<ativo>.png`.
 #
 # Como cada número é calculado: `pt2/README.md`.
 
@@ -25,7 +26,7 @@ import pandas as pd
 
 from pt2.picos import (
     HORIZONS, PEAK_TIMES, add_forward_change, add_minute_change, after_peak_table, change_profile, peak_window,
-    summarize_peaks, volume_profile,
+    price_path, summarize_peaks, volume_profile,
 )
 from src.ingestion.loader import INTERIM_DIR
 
@@ -78,14 +79,15 @@ for asset in ASSETS:
     print(table.round(2).to_string(index=False))
 
 # %% [markdown]
-# ## 2. Volume e variação do preço médio ao longo do dia
-# Em cima, o mesmo gráfico de volume dos slides; embaixo, quanto o preço médio se move em cada minuto.
+# ## 2. Volume, preço médio e variação ao longo do dia
+# Em cima, o mesmo gráfico de volume dos slides. No meio, onde está o preço médio em relação à abertura do
+# mesmo dia. Embaixo, quanto o preço médio se move em cada minuto.
 
 # %%
 for asset, name in ASSETS.items():
     b = bars[asset]
-    vol, chg = volume_profile(b), change_profile(b)
-    fig, (ax_v, ax_p) = plt.subplots(2, 1, figsize=(12, 7.5), sharex=True, gridspec_kw={"hspace": 0.45})
+    vol, path, chg = volume_profile(b), price_path(b), change_profile(b)
+    fig, (ax_v, ax_c, ax_p) = plt.subplots(3, 1, figsize=(12, 11), sharex=True, gridspec_kw={"hspace": 0.5})
 
     ax_v.plot([minutes_since_nine(t) for t in vol.index], vol.values, color=COLOR[asset], lw=2)
     ax_v.axhline(1, color=INK, ls="--", lw=1)
@@ -93,15 +95,25 @@ for asset, name in ASSETS.items():
            "volume mediano de cada minuto, dividido pelo volume típico da tarde (14h–17h) · 1 = normal da tarde")
     ax_v.set_ylabel("× volume da tarde")
 
+    x_path = [minutes_since_nine(t) for t in path.index]
+    ax_c.fill_between(x_path, path["p10"], path["p90"], color=COLOR[asset], alpha=0.25, lw=0,
+                      label="80% dos pregões (de 10% a 90%)")
+    ax_c.plot(x_path, path["mediana"], color=COLOR[asset], lw=2, label="mediana dos pregões")
+    ax_c.axhline(0, color=INK, lw=1)
+    ax_c.legend(frameon=False, loc="upper left", ncols=2)
+    titles(ax_c, f"{asset} · {name}: preço médio por minuto",
+           "preço médio (máx + mín + fech) / 3 do minuto − preço médio do 1º minuto do mesmo pregão, em pontos")
+    ax_c.set_ylabel("pontos desde a abertura")
+
     ax_p.plot([minutes_since_nine(t) for t in chg.index], chg.values, color=COLOR[asset], lw=2)
     titles(ax_p, f"{asset} · {name}: quanto o preço médio varia por minuto",
-           "mediana do |variação| do preço médio (máx + mín + fech) / 3 em relação ao minuto anterior, em pontos")
+           "mediana do |variação| do preço médio em relação ao minuto anterior, em pontos")
     ax_p.set_ylabel("pontos")
     ax_p.set_ylim(bottom=0)
 
     hours = range(9, 19)
     ax_p.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
-    for ax in (ax_v, ax_p):
+    for ax in (ax_v, ax_c, ax_p):
         for t in PEAK_TIMES:
             ax.axvline(minutes_since_nine(t), color="#DAD5CD", lw=0.8, zorder=0)
         ax.set_xlim(-5, minutes_since_nine(vol.index.max()) + 5)
@@ -141,6 +153,30 @@ for asset, name in ASSETS.items():
     ax_p.text(0, -0.25, "9:00 fica de fora: é a abertura e não existe minuto antes dela.",
               transform=ax_p.transAxes, fontsize=9.5, color=INK_2)
     fig.savefig(FIGURES / f"picos_{asset.lower()}.png", dpi=160, bbox_inches="tight")
+    plt.show()
+
+# %% [markdown]
+# ## 3b. Máxima, mínima e mediana da variação, antes e no pico
+
+# %%
+for asset, name in ASSETS.items():
+    t = tables[asset]
+    x = list(range(len(t)))
+    fig, ax = plt.subplots(figsize=(13, 6))
+    for offset, label, color, key in ((-0.15, "minuto antes do pico (T−1)", MUTED, "antes"),
+                                      (0.15, "minuto do pico (T)", COLOR[asset], "pico")):
+        xs = [i + offset for i in x]
+        ax.vlines(xs, t[f"{key}_min"], t[f"{key}_max"], color=color, lw=5, label=f"{label}: da mínima à máxima")
+        ax.scatter(xs, t[f"{key}_mediana"], s=30, color=SURFACE, edgecolor=INK, zorder=3)
+    ax.scatter([], [], s=30, color=SURFACE, edgecolor=INK, label="mediana")
+    ax.axhline(0, color=INK, lw=1)
+    ax.set_xticks(x, t["horario"], rotation=45)
+    ax.set_ylabel("pontos")
+    ax.legend(frameon=False, loc="upper right", ncols=3, fontsize=10)
+    titles(ax, f"{asset} · {name}: máxima, mínima e mediana da variação, antes e no pico",
+           "variação do preço médio em relação ao minuto anterior, com sinal, em pontos · "
+           "a mediana fica em ~0; os extremos são poucos dias de notícia")
+    fig.savefig(FIGURES / f"extremos_{asset.lower()}.png", dpi=160, bbox_inches="tight")
     plt.show()
 
 # %% [markdown]

@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 
 from pt2.picos import (
-    add_forward_change, add_minute_change, after_peak_table, after_stats, peak_window, summarize_peaks,
+    add_forward_change, add_minute_change, after_peak_table, after_stats, peak_window, price_path,
+    summarize_peaks,
 )
 
 
@@ -134,3 +135,17 @@ def test_tabela_depois_do_pico_compara_com_minutos_comuns_da_mesma_hora():
     assert table.loc["10:30", "normal_sobe_pct"] == pytest.approx(100 * 57 / 58)
     # minutos comuns das 11h: todos caem (11:59 não tem minuto seguinte)
     assert table.loc["11:00", "normal_sobe_pct"] == 0
+
+
+def test_caminho_do_preco_e_medido_contra_a_abertura_do_mesmo_pregao():
+    bars = add_minute_change(_flat([
+        ("2024-03-04 09:00", 100),
+        ("2024-03-04 09:01", 104),
+        ("2024-03-05 09:01", 500),   # 1º negócio do dia às 9:01: vira a referência
+        ("2024-03-05 09:02", 490),
+    ]))
+    path = price_path(bars)
+    assert path.loc[time(9, 0), "mediana"] == 0
+    assert path.loc[time(9, 1), "mediana"] == 2          # dias: +4 e 0
+    assert path.loc[time(9, 1), "pregoes"] == 2
+    assert path.loc[time(9, 2), "mediana"] == -10

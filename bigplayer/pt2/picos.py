@@ -98,6 +98,15 @@ def change_profile(bars: pd.DataFrame) -> pd.Series:
     return bars.dropna(subset=["variacao"]).groupby("minuto")["variacao"].apply(lambda s: s.abs().median())
 
 
+def price_path(bars: pd.DataFrame) -> pd.DataFrame:
+    """Para cada minuto do dia: onde está o preço médio em relação ao 1º minuto do mesmo pregão
+    (preço médio do minuto − preço médio do 1º minuto com negócio), em pontos.
+    Colunas: `mediana`, `p10`, `p90` sobre os pregões e `pregoes` (quantos têm aquele minuto)."""
+    from_open = bars["preco_medio"] - bars.groupby("session_date")["preco_medio"].transform("first")
+    g = from_open.groupby(bars["minuto"])
+    return pd.DataFrame({"mediana": g.median(), "p10": g.quantile(0.10), "p90": g.quantile(0.90), "pregoes": g.size()})
+
+
 def add_forward_change(bars: pd.DataFrame, horizons: list[int] = HORIZONS) -> pd.DataFrame:
     """Acrescenta, para cada h, `depois_<h>` (preço médio) e `depois_fech_<h>` (fechamento):
     valor h minutos depois − valor do minuto, em pontos. Fica vazio quando não há barra
