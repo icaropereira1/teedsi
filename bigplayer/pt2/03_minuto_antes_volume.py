@@ -393,16 +393,15 @@ plt.show()
 
 # %% [markdown]
 # ## 9. Só a manhã: os 5 picos até 12h, com mediana e média logo acima de cada pico
-# x = preço no pico, y = preço no minuto antes, os dois em relação à abertura do dia;
-# x − y = diferença dentro de cada pregão.
+# Acima de cada pico: mediana e média do preço médio (o preço em si, em pontos) no minuto do pico e no minuto
+# antes (t−1), e a variação de t−1 para o pico calculada dentro de cada pregão.
 
 # %%
 MORNING_END = time(12, 10)
 fig, axes = plt.subplots(2, 1, figsize=(18, 12), gridspec_kw={"hspace": 0.35})
 for ax, (asset, name) in zip(axes, ASSETS.items()):
-    b = bars[asset].copy()
-    b["desde_abertura"] = b["preco_medio"] - b.groupby("session_date")["preco_medio"].transform("first")
-    rel = b.pivot(index="session_date", columns="minuto", values="desde_abertura")
+    b = bars[asset]
+    level = b.pivot(index="session_date", columns="minuto", values="preco_medio")
     morning = b[b["minuto"] <= MORNING_END]
     med = morning.groupby("minuto")["vol"].median()
     xs = [minutes_since_nine(t) for t in med.index]
@@ -411,14 +410,14 @@ for ax, (asset, name) in zip(axes, ASSETS.items()):
     decimals = 2 if asset == "WDO" else 1
     for i, t in enumerate(PEAKS):
         before = (datetime.combine(date(2000, 1, 1), t) - timedelta(minutes=1)).time()
-        d = pd.DataFrame({"x": rel[t], "y": rel[before]}).dropna()
+        d = pd.DataFrame({"x": level[t], "y": level[before]}).dropna()
         diff = d["x"] - d["y"]
         xp = minutes_since_nine(t)
         ax.scatter([xp], [med[t]], s=60, color=COLOR[asset], edgecolor=INK, zorder=4)
         text = (f"{t:%H:%M}\n"
-                f"pico (x): med {br(d['x'].median(), decimals)} · média {br(d['x'].mean(), decimals)}\n"
-                f"t−1 (y): med {br(d['y'].median(), decimals)} · média {br(d['y'].mean(), decimals)}\n"
-                f"x − y: med {br(diff.median(), decimals)} · média {br(diff.mean(), decimals)}")
+                f"pico: mediana {br_level(d['x'].median())} · média {br_level(d['x'].mean())}\n"
+                f"t−1: mediana {br_level(d['y'].median())} · média {br_level(d['y'].mean())}\n"
+                f"t−1 → pico, dia a dia: mediana {br(diff.median(), decimals)} · média {br(diff.mean(), decimals)}")
         ax.annotate(text, xy=(xp, med[t]), xytext=(xp, top * (1.25 if i % 2 == 0 else 1.75)), ha="center", va="bottom",
                     fontsize=9, bbox=dict(boxstyle="round,pad=0.35", fc="white", ec=GRID),
                     arrowprops=dict(arrowstyle="-", color=INK_2, lw=0.7))
@@ -429,10 +428,10 @@ for ax, (asset, name) in zip(axes, ASSETS.items()):
     ax.yaxis.set_major_formatter(mil_axis)
     ax.set_ylabel("contratos por minuto (mediana)")
     ax.set_title(f"{asset} · {name}", loc="left", fontsize=15, fontweight="bold")
-fig.suptitle("Os picos de volume da manhã: preço no pico (x) e no minuto antes (y)", x=0.125, y=0.995, ha="left",
+fig.suptitle("Os picos de volume da manhã: preço no pico e no minuto antes (t−1)", x=0.125, y=0.995, ha="left",
              fontsize=18, fontweight="bold")
-fig.text(0.125, 0.94, "linha = volume mediano por minuto · preço = preço médio (máx + mín + fech) / 3 em relação ao "
-         "1º minuto do dia, em pontos · x − y = diferença dentro de cada pregão · med = mediana dos pregões",
+fig.text(0.125, 0.94, "linha = volume mediano por minuto · preço = preço médio (máx + mín + fech) / 3, em pontos, "
+         "mediana e média dos pregões · t−1 → pico = variação calculada dentro de cada pregão",
          fontsize=10.5, color=INK_2)
 fig.savefig(FIGURES / "picos_manha.png", dpi=150, bbox_inches="tight")
 plt.show()
