@@ -512,3 +512,11 @@ draw_day_peaks("preço médio (mín + máx) / 2", lambda b: (b["low"] + b["high"
 draw_day_peaks("amplitude (máx − mín)", lambda b: b["high"] - b["low"], "picos_dia_amplitude.png",
                title="Volume negociado em cada minuto do pregão e a amplitude do minuto (máx − mín) nos picos",
                article="da")
+
+# %% [markdown]
+# ## 13. Máxima do minuto no pico e em t−1
+# Mediana, entre os pregões, da máxima do minuto; Δ = subtração das duas medianas mostradas.
+
+# %%
+draw_day_peaks("máxima", lambda b: b["high"], "picos_dia_maxima.png",
+               title="Volume negociado em cada minuto do pregão e a máxima do minuto nos picos", article="da")
