@@ -10,7 +10,8 @@
 # - contratos = volume do minuto (coluna `vol`).
 #
 # **Entrada:** `data/interim/<ativo>_m1_limpo.parquet`. **Saídas:** `pt2/reports/antes_pico_<ativo>.csv` e
-# `pt2/reports/figures/{volume_picos_anotado,antes_vs_pico_preco,antes_vs_pico_contratos,janela_picos_<ativo>}.png`.
+# `pt2/reports/figures/{volume_picos_anotado,antes_vs_pico_preco,antes_vs_pico_contratos,janela_picos_<ativo>,zoom_picos_<ativo>}.png`
+# e `pt2/reports/zoom_picos_<ativo>.csv`.
 
 # %%
 import sys
@@ -243,4 +244,53 @@ for asset, name in ASSETS.items():
     fig.text(0.125, 0.94, "barra = mediana dos pregões · losango = média · 1 minuto antes em cinza escuro, minuto do pico "
              "colorido · tamanho = variação do preço médio sem sinal", fontsize=10.5, color=INK_2)
     fig.savefig(FIGURES / f"janela_picos_{asset.lower()}.png", dpi=150, bbox_inches="tight")
+    plt.show()
+
+# %% [markdown]
+# ## 6. Zoom nos picos: de 10 minutos antes a 10 minutos depois, com o horário real
+# Só os 5 picos; a tarde e os horários sem pico ficam de fora.
+
+# %%
+ZOOM = range(-10, 11)
+for asset, name in ASSETS.items():
+    w = around_peaks(bars[asset], PEAKS, ZOOM)
+    w["tamanho"] = w["variacao"].abs()
+    z = w.groupby(["horario", "minuto_rel"]).agg(
+        contratos_mediana=("vol", "median"), contratos_media=("vol", "mean"),
+        tamanho_mediana=("tamanho", "median"), tamanho_media=("tamanho", "mean"),
+        preco_mediana=("variacao", "median"), preco_media=("variacao", "mean"),
+    ).reset_index()
+    z.round(2).to_csv(REPORTS / f"zoom_picos_{asset.lower()}.csv", index=False)
+
+    rows = (("contratos", "contratos no minuto", mil_axis),
+            ("tamanho", "tamanho da variação\ndo preço (pontos)", num_axis),
+            ("preco", "direção da variação\ndo preço (pontos)", num_axis))
+    fig, axes = plt.subplots(len(rows), len(PEAKS), figsize=(20, 11), sharey="row",
+                             gridspec_kw={"hspace": 0.5, "wspace": 0.08})
+    for col, (t, h) in enumerate(zip(PEAKS, LABELS)):
+        d = z[z["horario"] == h].sort_values("minuto_rel")
+        colors = [COLOR[asset] if k == 0 else (MINUTE_COLOR[-1] if k == -1 else MINUTE_COLOR[-2])
+                  for k in d["minuto_rel"]]
+        ticks = [-10, -5, 0, 5, 10]
+        tick_labels = []
+        for k in ticks:
+            m = minutes_since_nine(t) + k
+            tick_labels.append(f"{9 + m // 60}:{m % 60:02d}")
+        for row, (kind, ylabel, fmt) in enumerate(rows):
+            ax = axes[row, col]
+            ax.bar(d["minuto_rel"], d[f"{kind}_mediana"], color=colors, edgecolor=INK, lw=0.5, width=0.8)
+            ax.scatter(d["minuto_rel"], d[f"{kind}_media"], marker="D", s=14, color=SURFACE, edgecolor=INK, zorder=3)
+            if kind == "preco":
+                ax.axhline(0, color=INK, lw=1)
+            ax.set_xticks(ticks, tick_labels, fontsize=9.5)
+            if col == 0:
+                ax.yaxis.set_major_formatter(fmt)
+                ax.set_ylabel(ylabel)
+        axes[0, col].set_title(f"pico das {h}", fontsize=13, fontweight="bold")
+    fig.suptitle(f"{asset} · {name}: zoom nos 5 picos, minuto a minuto (10 antes, 10 depois)", x=0.125, y=0.99,
+                 ha="left", fontsize=17, fontweight="bold")
+    fig.text(0.125, 0.945, "barra = mediana dos pregões · losango = média · 1 minuto antes em cinza escuro, minuto do "
+             "pico colorido · preço = variação do preço médio (máx + mín + fech) / 3 em relação ao minuto anterior",
+             fontsize=10.5, color=INK_2)
+    fig.savefig(FIGURES / f"zoom_picos_{asset.lower()}.png", dpi=150, bbox_inches="tight")
     plt.show()
