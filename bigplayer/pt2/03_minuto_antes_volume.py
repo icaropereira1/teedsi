@@ -435,3 +435,48 @@ fig.text(0.125, 0.94, "linha = volume mediano por minuto · números = mediana d
          fontsize=10.5, color=INK_2)
 fig.savefig(FIGURES / "picos_manha.png", dpi=150, bbox_inches="tight")
 plt.show()
+
+# %% [markdown]
+# ## 10. Dia inteiro: mediana do FECHAMENTO no pico e no minuto antes (t−1)
+# Todos os :00 e :30 de 9:30 a 17:30. Preço = fechamento do minuto (não o preço médio), mediana entre os pregões
+# que têm os dois minutos.
+
+# %%
+ALL_PEAKS = [time(h, m) for h in range(9, 18) for m in (0, 30)][1:]
+fig, axes = plt.subplots(2, 1, figsize=(22, 12), gridspec_kw={"hspace": 0.35})
+for ax, (asset, name) in zip(axes, ASSETS.items()):
+    b = bars[asset]
+    close = b.pivot(index="session_date", columns="minuto", values="close")
+    med = b.groupby("minuto")["vol"].median()
+    xs = [minutes_since_nine(t) for t in med.index]
+    ax.plot(xs, med.values, color=COLOR[asset], lw=1.8)
+    top = med.max()
+    before_color = "#4A4640"
+    for i, t in enumerate(ALL_PEAKS):
+        before = (datetime.combine(date(2000, 1, 1), t) - timedelta(minutes=1)).time()
+        d = pd.DataFrame({"x": close[t], "y": close[before]}).dropna()
+        xp = minutes_since_nine(t)
+        ax.scatter([xp - 1], [med[before]], s=40, color=before_color, edgecolor=INK, zorder=4)
+        ax.scatter([xp], [med[t]], s=55, color=COLOR[asset], edgecolor=INK, zorder=4)
+        nearby = med[[m for m in med.index if abs(minutes_since_nine(m) - xp) <= 30]].max()
+        base = nearby + top * (0.08 if i % 2 == 0 else 0.30)
+        ax.text(xp, base + top * 0.11, br_level(d["x"].median()), ha="center", va="bottom",
+                fontsize=10, fontweight="bold", color=COLOR[asset])
+        ax.text(xp, base, br_level(d["y"].median()), ha="center", va="bottom", fontsize=10, color=before_color)
+        ax.plot([xp, xp], [med[t], base], color=GRID, lw=0.8, zorder=1)
+    ax.scatter([], [], s=55, color=COLOR[asset], edgecolor=INK, label="mediana do fechamento no minuto do pico")
+    ax.scatter([], [], s=40, color=before_color, edgecolor=INK, label="mediana do fechamento no minuto antes (t−1)")
+    ax.legend(frameon=False, loc="upper right", fontsize=11)
+    hours = range(9, 19)
+    ax.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
+    ax.set_xlim(-8, max(xs) + 8)
+    ax.set_ylim(0, top * 1.9)
+    ax.yaxis.set_major_formatter(mil_axis)
+    ax.set_ylabel("contratos por minuto (mediana)")
+    ax.set_title(f"{asset} · {name}", loc="left", fontsize=15, fontweight="bold")
+fig.suptitle("Picos de volume do dia: preço de fechamento no pico e no minuto antes (t−1)", x=0.125, y=0.995,
+             ha="left", fontsize=19, fontweight="bold")
+fig.text(0.125, 0.945, "linha = volume mediano por minuto · números = mediana, entre os pregões, do preço de fechamento "
+         "do minuto, em pontos · horários de pico = todo :00 e :30 de 9:30 a 17:30", fontsize=11, color=INK_2)
+fig.savefig(FIGURES / "picos_dia_fechamento.png", dpi=150, bbox_inches="tight")
+plt.show()
