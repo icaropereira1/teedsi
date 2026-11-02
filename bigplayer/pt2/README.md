@@ -25,6 +25,9 @@ O código das contas está em `pt2/picos.py`, e cada função tem a definição 
 Roteiro da apresentação de 03/11/2026: `pt2/ROTEIRO_APRESENTACAO.md`.
 Slide pronto do minuto antes dos 5 picos (9:30, 10:00, 10:30, 11:00 e 12:00): `python pt2/02_slide_minuto_antes.py`
 → `pt2/reports/figures/slide_minuto_antes.png`.
+Preço e contratos no minuto antes dos 5 picos, comparados com 2 minutos antes e com o pico, com mediana e média:
+`python pt2/03_minuto_antes_volume.py` → `antes_pico_<ativo>.csv` e as figuras `volume_picos_anotado.png`,
+`antes_vs_pico_preco.png`, `antes_vs_pico_contratos.png` e `janela_picos_<ativo>.png`.
 
 ## Como cada número é calculado
 

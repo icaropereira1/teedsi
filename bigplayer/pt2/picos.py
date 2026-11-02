@@ -58,6 +58,21 @@ def peak_window(bars: pd.DataFrame, times: list[time] = PEAK_TIMES) -> pd.DataFr
     return pd.concat(rows, ignore_index=True)[["session_date", "horario", "var_antes2", "var_antes", "var_pico"]]
 
 
+def around_peaks(bars: pd.DataFrame, times: list[time] = PEAK_TIMES,
+                 offsets: range = range(-5, 6)) -> pd.DataFrame:
+    """Uma linha por pregão, horário de pico e minuto relativo (`minuto_rel`: −1 = 1 minuto antes do pico,
+    0 = o minuto do pico), com a variação do preço médio (pontos) e o volume (contratos) daquele minuto.
+    Cada minuto usa todos os pregões que têm barra nele."""
+    by_minute = {m: g for m, g in bars.groupby("minuto")}
+    rows = []
+    for t in times:
+        for k in offsets:
+            g = by_minute.get(_shift(t, k))
+            if g is not None:
+                rows.append(g[["session_date", "variacao", "vol"]].assign(horario=t.strftime("%H:%M"), minuto_rel=k))
+    return pd.concat(rows, ignore_index=True)
+
+
 def _larger_pct(a: pd.Series, b: pd.Series) -> tuple[float, float]:
     """Entre os pregões em que |a| ≠ |b|: % em que |a| > |b|, e a margem de erro dessa porcentagem."""
     a, b = a.abs(), b.abs()

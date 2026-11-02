@@ -29,7 +29,7 @@ matplotlib.rcParams.update({"font.family": "DejaVu Sans", "text.color": INK})
 def br(x: float, decimals: int) -> str:
     """Número no formato brasileiro, com sinal de menos tipográfico."""
     s = f"{x:.{decimals}f}".replace(".", ",")
-    return s.replace("-", "−") if x < 0 else s
+    return s.replace("-", "−") if round(x, decimals) < 0 else s.lstrip("-")
 
 
 # %%

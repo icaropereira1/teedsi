@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from pt2.picos import (
-    add_forward_change, add_minute_change, after_peak_table, after_stats, peak_window, price_path,
+    add_forward_change, add_minute_change, after_peak_table, after_stats, around_peaks, peak_window, price_path,
     summarize_peaks,
 )
 
@@ -150,3 +150,13 @@ def test_caminho_do_preco_e_medido_contra_a_abertura_do_mesmo_pregao():
     assert path.loc[time(9, 1), "mediana"] == 2          # dias: +4 e 0
     assert path.loc[time(9, 1), "pregoes"] == 2
     assert path.loc[time(9, 2), "mediana"] == -10
+
+
+def test_janela_em_volta_do_pico_marca_o_minuto_relativo():
+    bars = _flat([("2024-03-04 09:58", 100), ("2024-03-04 09:59", 102), ("2024-03-04 10:00", 107)])
+    bars["vol"] = [10, 20, 90]
+    window = around_peaks(add_minute_change(bars), times=[time(10, 0)], offsets=range(-2, 2))
+    rows = window.sort_values("minuto_rel")[["minuto_rel", "variacao", "vol"]].values.tolist()
+    assert rows[0][0] == -2 and pd.isna(rows[0][1]) and rows[0][2] == 10
+    assert rows[1:] == [[-1, 2, 20], [0, 5, 90]]          # 10:01 não existe: fica de fora
+    assert set(window["horario"]) == {"10:00"}
