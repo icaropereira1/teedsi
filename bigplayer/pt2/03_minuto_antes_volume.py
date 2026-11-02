@@ -446,47 +446,59 @@ plt.show()
 # %%
 ALL_PEAKS = [time(h, m) for h in range(9, 18) for m in (0, 30)][1:]
 Y_AXIS = {"WDO": (19_500, range(0, 18_001, 3_000)), "WIN": (96_000, range(0, 80_001, 10_000))}
-fig, axes = plt.subplots(2, 1, figsize=(22, 13), gridspec_kw={"hspace": 0.3})
-before_color = "#4A4640"
-for ax, (asset, name) in zip(axes, ASSETS.items()):
-    b = bars[asset]
-    close = b.pivot(index="session_date", columns="minuto", values="close")
-    g = b.groupby("minuto")["vol"]
-    med, mean = g.median(), g.mean()
-    xs = [minutes_since_nine(t) for t in med.index]
-    ax.plot(xs, mean.values, color=COLOR[asset], lw=1.1, ls="--", alpha=0.8, label="volume: média")
-    ax.plot(xs, med.values, color=COLOR[asset], lw=1.8, label="volume: mediana")
-    for t in ALL_PEAKS:
-        before = (datetime.combine(date(2000, 1, 1), t) - timedelta(minutes=1)).time()
-        d = pd.DataFrame({"x": close[t], "y": close[before]}).dropna()
-        x_med, y_med = float(f"{d['x'].median():.1f}"), float(f"{d['y'].median():.1f}")
-        diff = x_med - y_med                     # bate com os números mostrados
-        xp = minutes_since_nine(t)
-        ax.scatter([xp - 1], [med[before]], s=40, color=before_color, edgecolor=INK, zorder=4)
-        ax.scatter([xp], [med[t]], s=55, color=COLOR[asset], edgecolor=INK, zorder=4)
-        anchor = max(mean[t], mean[before], med[t])          # topo do pico, contando a linha da média
-        for offset, text, color, weight in ((4, f"Δ {br(diff, 1)}", INK, "bold"),
-                                            (17, br_level(y_med), before_color, "normal"),
-                                            (30, br_level(x_med), COLOR[asset], "bold")):
-            ax.annotate(text, xy=(xp, anchor), xytext=(0, offset), textcoords="offset points",
-                        ha="center", va="bottom", fontsize=9.5, fontweight=weight, color=color)
-    ax.scatter([], [], s=55, color=COLOR[asset], edgecolor=INK, label="mediana do fechamento no minuto do pico (pontos)")
-    ax.scatter([], [], s=40, color=before_color, edgecolor=INK, label="mediana do fechamento no minuto antes, t−1 (pontos)")
-    ax.plot([], [], " ", label="Δ = mediana do pico − mediana de t−1 (pontos)")
-    ax.legend(frameon=False, loc="upper right", fontsize=10.5)
-    hours = range(9, 19)
-    ax.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
-    ax.set_xlim(-8, max(xs) + 8)
-    ylim, yticks = Y_AXIS[asset]
-    ax.set_ylim(0, ylim)
-    ax.set_yticks(list(yticks))
-    ax.yaxis.set_major_formatter(mil_axis)
-    ax.set_ylabel("contratos por minuto")
-    ax.set_title(f"{asset} · {name}", loc="left", fontsize=15, fontweight="bold")
-fig.suptitle("Volume negociado em cada minuto do pregão e o preço de fechamento nos picos", x=0.125, y=0.995,
-             ha="left", fontsize=19, fontweight="bold")
-fig.text(0.125, 0.947, "volume em contratos por minuto: mediana (linha cheia) e média (tracejada) dos pregões · "
-         "todos os números acima dos picos estão em pontos · horários de pico = todo :00 e :30 de 9:30 a 17:30",
-         fontsize=11, color=INK_2)
-fig.savefig(FIGURES / "picos_dia_fechamento.png", dpi=150, bbox_inches="tight")
-plt.show()
+
+
+def draw_day_peaks(price_name: str, price_of, filename: str) -> None:
+    """price_of(barras) devolve o preço de cada minuto; price_name entra no título e na legenda."""
+    fig, axes = plt.subplots(2, 1, figsize=(22, 13), gridspec_kw={"hspace": 0.3})
+    before_color = "#4A4640"
+    for ax, (asset, name) in zip(axes, ASSETS.items()):
+        b = bars[asset]
+        close = b.assign(preco=price_of(b)).pivot(index="session_date", columns="minuto", values="preco")
+        g = b.groupby("minuto")["vol"]
+        med, mean = g.median(), g.mean()
+        xs = [minutes_since_nine(t) for t in med.index]
+        ax.plot(xs, mean.values, color=COLOR[asset], lw=1.1, ls="--", alpha=0.8, label="volume: média")
+        ax.plot(xs, med.values, color=COLOR[asset], lw=1.8, label="volume: mediana")
+        for t in ALL_PEAKS:
+            before = (datetime.combine(date(2000, 1, 1), t) - timedelta(minutes=1)).time()
+            d = pd.DataFrame({"x": close[t], "y": close[before]}).dropna()
+            x_med, y_med = float(f"{d['x'].median():.1f}"), float(f"{d['y'].median():.1f}")
+            diff = x_med - y_med                     # bate com os números mostrados
+            xp = minutes_since_nine(t)
+            ax.scatter([xp - 1], [med[before]], s=40, color=before_color, edgecolor=INK, zorder=4)
+            ax.scatter([xp], [med[t]], s=55, color=COLOR[asset], edgecolor=INK, zorder=4)
+            anchor = max(mean[t], mean[before], med[t])          # topo do pico, contando a linha da média
+            for offset, text, color, weight in ((4, f"Δ {br(diff, 1)}", INK, "bold"),
+                                                (17, br_level(y_med), before_color, "normal"),
+                                                (30, br_level(x_med), COLOR[asset], "bold")):
+                ax.annotate(text, xy=(xp, anchor), xytext=(0, offset), textcoords="offset points",
+                            ha="center", va="bottom", fontsize=9.5, fontweight=weight, color=color)
+        ax.scatter([], [], s=55, color=COLOR[asset], edgecolor=INK, label=f"mediana do {price_name} no minuto do pico (pontos)")
+        ax.scatter([], [], s=40, color=before_color, edgecolor=INK, label=f"mediana do {price_name} no minuto antes, t−1 (pontos)")
+        ax.plot([], [], " ", label="Δ = mediana do pico − mediana de t−1 (pontos)")
+        ax.legend(frameon=False, loc="upper right", fontsize=10.5)
+        hours = range(9, 19)
+        ax.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
+        ax.set_xlim(-8, max(xs) + 8)
+        ylim, yticks = Y_AXIS[asset]
+        ax.set_ylim(0, ylim)
+        ax.set_yticks(list(yticks))
+        ax.yaxis.set_major_formatter(mil_axis)
+        ax.set_ylabel("contratos por minuto")
+        ax.set_title(f"{asset} · {name}", loc="left", fontsize=15, fontweight="bold")
+    fig.suptitle(f"Volume negociado em cada minuto do pregão e o {price_name} nos picos", x=0.125, y=0.995,
+                 ha="left", fontsize=19, fontweight="bold")
+    fig.text(0.125, 0.947, "volume em contratos por minuto: mediana (linha cheia) e média (tracejada) dos pregões · "
+             "todos os números acima dos picos estão em pontos · horários de pico = todo :00 e :30 de 9:30 a 17:30",
+             fontsize=11, color=INK_2)
+    fig.savefig(FIGURES / filename, dpi=150, bbox_inches="tight")
+    plt.show()
+
+draw_day_peaks("fechamento", lambda b: b["close"], "picos_dia_fechamento.png")
+
+# %% [markdown]
+# ## 11. O mesmo gráfico com o preço médio (mínima + máxima) / 2
+
+# %%
+draw_day_peaks("preço médio (mín + máx) / 2", lambda b: (b["low"] + b["high"]) / 2, "picos_dia_preco_medio.png")
