@@ -448,7 +448,8 @@ ALL_PEAKS = [time(h, m) for h in range(9, 18) for m in (0, 30)][1:]
 Y_AXIS = {"WDO": (19_500, range(0, 18_001, 3_000)), "WIN": (96_000, range(0, 80_001, 10_000))}
 
 
-def draw_day_peaks(price_name: str, price_of, filename: str, title: str | None = None, article: str = "do") -> None:
+def draw_day_peaks(price_name: str, price_of, filename: str, title: str | None = None, article: str = "do",
+                   day_by_day: bool = False) -> None:
     """price_of(barras) devolve o valor de cada minuto; price_name entra no título e na legenda."""
     fig, axes = plt.subplots(2, 1, figsize=(22, 13), gridspec_kw={"hspace": 0.3})
     before_color = "#4A4640"
@@ -465,18 +466,30 @@ def draw_day_peaks(price_name: str, price_of, filename: str, title: str | None =
             d = pd.DataFrame({"x": close[t], "y": close[before]}).dropna()
             x_med, y_med = float(f"{d['x'].median():.1f}"), float(f"{d['y'].median():.1f}")
             diff = x_med - y_med                     # bate com os números mostrados
+            if day_by_day:                           # mediana da diferença dentro de cada pregão
+                day_diff = d["x"] - d["y"]
+                diff = day_diff.median()
+                up, down = 100 * (day_diff > 0).mean(), 100 * (day_diff < 0).mean()
             xp = minutes_since_nine(t)
             ax.scatter([xp - 1], [med[before]], s=40, color=before_color, edgecolor=INK, zorder=4)
             ax.scatter([xp], [med[t]], s=55, color=COLOR[asset], edgecolor=INK, zorder=4)
             anchor = max(mean[t], mean[before], med[t])          # topo do pico, contando a linha da média
-            for offset, text, color, weight in ((4, f"Δ {br(diff, 1)}", INK, "bold"),
-                                                (17, br_level(y_med), before_color, "normal"),
-                                                (30, br_level(x_med), COLOR[asset], "bold")):
+            lines = [(f"Δ {br(diff, 1)}", INK, "bold"), (br_level(y_med), before_color, "normal"),
+                     (br_level(x_med), COLOR[asset], "bold")]
+            if day_by_day:
+                lines.insert(0, (f"↑{up:.0f}% ↓{down:.0f}%", INK_2, "normal"))
+            for k, (text, color, weight) in enumerate(lines):
+                offset = 4 + 13 * k
                 ax.annotate(text, xy=(xp, anchor), xytext=(0, offset), textcoords="offset points",
-                            ha="center", va="bottom", fontsize=9.5, fontweight=weight, color=color)
+                            ha="center", va="bottom", fontsize=8 if text.startswith("↑") else 9.5,
+                            fontweight=weight, color=color)
         ax.scatter([], [], s=55, color=COLOR[asset], edgecolor=INK, label=f"mediana {article} {price_name} no minuto do pico (pontos)")
         ax.scatter([], [], s=40, color=before_color, edgecolor=INK, label=f"mediana {article} {price_name} no minuto antes, t−1 (pontos)")
-        ax.plot([], [], " ", label="Δ = mediana do pico − mediana de t−1 (pontos)")
+        if day_by_day:
+            ax.plot([], [], " ", label="Δ = mediana de (pico − t−1) calculada dentro de cada pregão (pontos)")
+            ax.plot([], [], " ", label="↑ / ↓ = % dos pregões em que o preço subiu / caiu de t−1 para o pico")
+        else:
+            ax.plot([], [], " ", label="Δ = mediana do pico − mediana de t−1 (pontos)")
         ax.legend(frameon=False, loc="upper right", fontsize=10.5)
         hours = range(9, 19)
         ax.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
@@ -528,3 +541,11 @@ draw_day_peaks("máxima", lambda b: b["high"], "picos_dia_maxima.png",
 # %%
 draw_day_peaks("mínima", lambda b: b["low"], "picos_dia_minima.png",
                title="Volume negociado em cada minuto do pregão e a mínima do minuto nos picos", article="da")
+
+
+# %% [markdown]
+# ## 15. Fechamento com o Δ dia a dia e a % de dias que sobe / cai
+
+# %%
+draw_day_peaks("fechamento", lambda b: b["close"], "picos_dia_fechamento_dia_a_dia.png",
+               title="Fechamento nos picos: o que o preço faz de t−1 para o pico, dia a dia", day_by_day=True)
