@@ -3,7 +3,9 @@ from datetime import time
 import pandas as pd
 import pytest
 
-from pt2.picos import add_forward_change, add_minute_change, after_stats, peak_window, summarize_peaks
+from pt2.picos import (
+    add_forward_change, add_minute_change, after_peak_table, after_stats, peak_window, summarize_peaks,
+)
 
 
 def _bars(rows):
@@ -14,71 +16,121 @@ def _bars(rows):
     return df
 
 
-def test_variacao_e_diferenca_do_preco_medio_entre_minutos_seguidos():
+def _flat(rows):
+    """rows: (timestamp, preço) com máxima = mínima = fechamento."""
+    return _bars([(ts, p, p, p) for ts, p in rows])
+
+
+def test_variacao_do_preco_medio_e_do_fechamento_entre_minutos_seguidos():
     bars = add_minute_change(_bars([
         ("2024-03-04 10:00", 103, 97, 100),   # preço médio 100
         ("2024-03-04 10:01", 106, 100, 103),  # preço médio 103
     ]))
     assert bars["preco_medio"].tolist() == [100, 103]
-    assert pd.isna(bars["variacao"].iloc[0])
     assert bars["variacao"].iloc[1] == 3
+    assert bars["variacao_fech"].iloc[1] == 3
+    assert bars[["variacao", "variacao_fech"]].iloc[0].isna().all()
 
 
 def test_variacao_nao_existe_depois_de_minuto_sem_negocio_nem_entre_pregoes():
-    bars = add_minute_change(_bars([
-        ("2024-03-04 10:00", 100, 100, 100),
-        ("2024-03-04 10:02", 110, 110, 110),  # 10:01 sem negócio
-        ("2024-03-04 18:29", 120, 120, 120),
-        ("2024-03-05 09:00", 130, 130, 130),  # pregão seguinte
+    bars = add_minute_change(_flat([
+        ("2024-03-04 10:00", 100),
+        ("2024-03-04 10:02", 110),  # 10:01 sem negócio
+        ("2024-03-04 23:59", 120),
+        ("2024-03-05 00:00", 130),  # 1 minuto depois, mas em outro pregão
     ]))
     assert bars["variacao"].isna().all()
+    assert bars["variacao_fech"].isna().all()
 
 
-def test_janela_do_pico_pega_minuto_anterior_e_minuto_do_pico():
-    bars = add_minute_change(_bars([
-        ("2024-03-04 09:58", 100, 100, 100),
-        ("2024-03-04 09:59", 102, 102, 102),
-        ("2024-03-04 10:00", 107, 107, 107),
-        ("2024-03-05 09:59", 200, 200, 200),  # sem 09:58: dia fica de fora
-        ("2024-03-05 10:00", 210, 210, 210),
+def test_janela_do_pico_pega_os_dois_minutos_anteriores_e_o_minuto_do_pico():
+    bars = add_minute_change(_flat([
+        ("2024-03-04 09:57", 100),
+        ("2024-03-04 09:58", 101),
+        ("2024-03-04 09:59", 103),
+        ("2024-03-04 10:00", 108),
+        ("2024-03-05 09:58", 200),  # sem 09:57: dia fica de fora
+        ("2024-03-05 09:59", 201),
+        ("2024-03-05 10:00", 210),
     ]))
     window = peak_window(bars, times=[time(10, 0)])
-    assert window[["horario", "var_antes", "var_pico"]].values.tolist() == [["10:00", 2, 5]]
+    assert window[["horario", "var_antes2", "var_antes", "var_pico"]].values.tolist() == [["10:00", 1, 2, 5]]
 
 
-def test_resumo_por_horario_tem_minima_mediana_maxima_e_mediana_absoluta():
+def test_resumo_por_horario():
     window = pd.DataFrame({
-        "session_date": pd.to_datetime(["2024-03-04", "2024-03-05", "2024-03-06"]),
-        "horario": ["10:00"] * 3,
-        "var_antes": [-4.0, 1.0, 2.0],
-        "var_pico": [3.0, -6.0, 9.0],
+        "session_date": pd.to_datetime(["2024-03-04", "2024-03-05", "2024-03-06", "2024-03-07"]),
+        "horario": ["10:00"] * 4,
+        "var_antes2": [1.0, 5.0, 2.0, 1.0],
+        "var_antes": [-4.0, 1.0, 2.0, 3.0],
+        "var_pico": [3.0, -6.0, 9.0, 3.0],
     })
     row = summarize_peaks(window).iloc[0]
-    assert row["pregoes"] == 3
-    assert (row["antes_min"], row["antes_mediana"], row["antes_max"], row["antes_mediana_abs"]) == (-4, 1, 2, 2)
-    assert (row["pico_min"], row["pico_mediana"], row["pico_max"], row["pico_mediana_abs"]) == (-6, 3, 9, 6)
+    assert row["pregoes"] == 4
+    assert (row["antes_min"], row["antes_mediana"], row["antes_max"], row["antes_mediana_abs"]) == (-4, 1.5, 3, 2.5)
+    assert (row["pico_min"], row["pico_mediana"], row["pico_max"], row["pico_mediana_abs"]) == (-6, 3, 9, 4.5)
+    # |T−1| contra |T−2|: 4>1, 1<5, 2=2 (empate fica fora), 3>1 → 2 de 3
+    assert row["antes_maior_pct"] == pytest.approx(200 / 3)
+    # |T| contra |T−1|: 3<4, 6>1, 9>2, 3=3 (empate fica fora) → 2 de 3
+    assert row["pico_maior_pct"] == pytest.approx(200 / 3)
+    assert row["pico_margem_pct"] == pytest.approx(100 * 1.96 * (0.25 / 3) ** 0.5)
 
 
-def test_variacao_depois_compara_com_o_preco_medio_h_minutos_depois():
+def test_variacao_depois_compara_com_h_minutos_depois():
     bars = add_forward_change(add_minute_change(_bars([
-        ("2024-03-04 10:00", 100, 100, 100),
-        ("2024-03-04 10:05", 104, 104, 104),
-        ("2024-03-04 10:06", 90, 90, 90),     # nada 5 minutos depois
+        ("2024-03-04 10:00", 103, 97, 100),    # preço médio 100, fechamento 100
+        ("2024-03-04 10:05", 110, 104, 108),   # preço médio 107,33, fechamento 108
+        ("2024-03-04 10:06", 90, 90, 90),      # nada 5 minutos depois
     ])), horizons=[5])
-    assert bars["depois_5"].iloc[0] == 4
-    assert bars["depois_5"].iloc[1:].isna().all()
+    assert bars["depois_5"].iloc[0] == pytest.approx(22 / 3)
+    assert bars["depois_fech_5"].iloc[0] == 8
+    assert bars[["depois_5", "depois_fech_5"]].iloc[1:].isna().all().all()
 
 
-def test_estatisticas_depois_do_pico():
+def test_estatisticas_depois_ignoram_dias_sem_dado():
     minutes = pd.DataFrame({
-        "variacao": [2.0, 2.0, -1.0, 0.0],
-        "depois_15": [5.0, -3.0, -4.0, 1.0],
+        "depois_15": [5.0, -3.0, -4.0, 1.0, None],
+        "variacao_fech": [2.0, 2.0, -1.0, 0.0, 1.0],
+        "depois_fech_15": [5.0, -3.0, -4.0, 1.0, None],
     })
     s = after_stats(minutes, 15)
     assert s["casos"] == 4
     assert (s["sobe_pct"], s["cai_pct"]) == (50, 50)
     assert s["mediana"] == -1
-    # só os 3 casos em que o minuto mexeu: 2 continuam (+2→+5, −1→−4), 1 volta (+2→−3)
+    # direção só onde o fechamento mexeu e há dado depois: 2 continuam (+2→+5, −1→−4), 1 volta (+2→−3)
+    assert s["casos_direcao"] == 3
     assert s["continua_pct"] == pytest.approx(200 / 3)
     assert s["volta_pct"] == pytest.approx(100 / 3)
     assert s["margem_pct"] == pytest.approx(100 * 1.96 * (0.25 / 3) ** 0.5)
+
+
+def test_direcao_usa_o_fechamento_e_nao_o_preco_medio():
+    minutes = pd.DataFrame({
+        "depois_5": [1.0],
+        "variacao_fech": [-1.0],      # fechamento caiu no minuto do pico...
+        "depois_fech_5": [-2.0],      # ...e continuou caindo
+    })
+    assert after_stats(minutes, 5)["continua_pct"] == 100
+
+
+def test_sem_minuto_anterior_ainda_tem_expectativa_mas_nao_tem_direcao():
+    minutes = pd.DataFrame({"depois_5": [3.0, -1.0], "variacao_fech": [None, None], "depois_fech_5": [3.0, -1.0]})
+    s = after_stats(minutes, 5)
+    assert (s["casos"], s["sobe_pct"], s["casos_direcao"]) == (2, 50, 0)
+    assert pd.isna(s["continua_pct"]) and pd.isna(s["margem_pct"])
+
+
+def test_tabela_depois_do_pico_compara_com_minutos_comuns_da_mesma_hora():
+    # sobe 1 ponto por minuto das 10:00 às 10:59 e cai 1 ponto por minuto das 11:00 às 11:59
+    minutes = pd.date_range("2024-03-04 10:00", "2024-03-04 11:59", freq="min")
+    prices = [m if m < 60 else 118 - m for m in range(len(minutes))]
+    bars = add_forward_change(add_minute_change(_flat(zip(minutes.astype(str), prices))), horizons=[1])
+    peaks = [time(10, 0), time(10, 30), time(11, 0), time(11, 30)]
+    table = after_peak_table(bars, times=peaks, horizons=[1]).set_index("horario")
+
+    assert table.loc["10:00", "sobe_pct"] == 100
+    assert table.loc["11:00", "sobe_pct"] == 0
+    # minutos comuns das 10h: 10:01 a 10:59 sem 10:30 = 58; só 10:59 → 11:00 cai
+    assert table.loc["10:30", "normal_sobe_pct"] == pytest.approx(100 * 57 / 58)
+    # minutos comuns das 11h: todos caem (11:59 não tem minuto seguinte)
+    assert table.loc["11:00", "normal_sobe_pct"] == 0

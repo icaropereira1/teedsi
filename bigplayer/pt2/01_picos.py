@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from pt2.picos import (
-    HORIZONS, PEAK_TIMES, add_forward_change, add_minute_change, after_table, change_profile, peak_window,
+    HORIZONS, PEAK_TIMES, add_forward_change, add_minute_change, after_peak_table, change_profile, peak_window,
     summarize_peaks, volume_profile,
 )
 from src.ingestion.loader import INTERIM_DIR
@@ -68,10 +68,8 @@ for asset in ASSETS:
 
     table = summarize_peaks(peak_window(b))
     vol = volume_profile(b)
-    by_hour = b.groupby(b["ts"].dt.hour)["variacao"].apply(lambda s: s.abs().median())
     peak_times = {t.strftime("%H:%M"): t for t in PEAK_TIMES}
     table["volume_x_tarde"] = [vol[peak_times[h]] for h in table["horario"]]
-    table["hora_mediana_abs"] = [by_hour[peak_times[h].hour] for h in table["horario"]]
     tables[asset] = table
     table.round(2).to_csv(REPORTS / f"picos_{asset.lower()}.csv", index=False)
 
@@ -112,54 +110,60 @@ for asset, name in ASSETS.items():
 
 # %% [markdown]
 # ## 3. Minuto antes do pico × minuto do pico
+# Em cima, quanto cada minuto costuma andar (mediana). Embaixo, a comparação dia a dia, que não sofre com os
+# "degraus" da mediana: em que % dos pregões um minuto mexeu mais que o anterior (50% = igual).
 
 # %%
 for asset, name in ASSETS.items():
     t = tables[asset]
-    x = range(len(t))
-    fig, ax = plt.subplots(figsize=(13, 5.5))
+    x = list(range(len(t)))
+    fig, (ax_m, ax_p) = plt.subplots(2, 1, figsize=(13, 10), sharex=True, gridspec_kw={"hspace": 0.45})
     kw = dict(width=0.38, edgecolor=INK, linewidth=1)
-    ax.bar([i - 0.2 for i in x], t["antes_mediana_abs"], color=MUTED, label="minuto antes do pico (T−1)", **kw)
-    ax.bar([i + 0.2 for i in x], t["pico_mediana_abs"], color=COLOR[asset], label="minuto do pico (T)", **kw)
-    ax.set_xticks(list(x), t["horario"], rotation=45)
-    ax.set_ylabel("pontos")
-    ax.legend(frameon=False, loc="upper right")
-    ax.text(0, -0.2, "9:00 fica de fora: é a abertura e não existe minuto antes dela.",
-            transform=ax.transAxes, fontsize=9.5, color=INK_2)
-    titles(ax, f"{asset} · {name}: quanto o preço médio varia antes e no pico",
+    ax_m.bar([i - 0.2 for i in x], t["antes_mediana_abs"], color=MUTED, label="minuto antes do pico (T−1)", **kw)
+    ax_m.bar([i + 0.2 for i in x], t["pico_mediana_abs"], color=COLOR[asset], label="minuto do pico (T)", **kw)
+    ax_m.set_ylabel("pontos")
+    ax_m.legend(frameon=False, loc="upper right")
+    titles(ax_m, f"{asset} · {name}: quanto o preço médio varia antes e no pico",
            f"mediana do |variação| do preço médio em relação ao minuto anterior, em pontos · "
            f"{t['pregoes'].min()} a {t['pregoes'].max()} pregões por horário")
+
+    ax_p.axhline(50, color=INK, ls="--", lw=1)
+    ax_p.errorbar([i - 0.15 for i in x], t["antes_maior_pct"], yerr=t["antes_margem_pct"], fmt="o", ms=7,
+                  color=MUTED, mec=INK, mew=0.8, elinewidth=1.5, capsize=3, label="T−1 mexeu mais que T−2")
+    ax_p.errorbar([i + 0.15 for i in x], t["pico_maior_pct"], yerr=t["pico_margem_pct"], fmt="o", ms=7,
+                  color=COLOR[asset], mec=INK, mew=0.8, elinewidth=1.5, capsize=3, label="T mexeu mais que T−1")
+    ax_p.set_ylabel("% dos pregões")
+    ax_p.legend(frameon=False, loc="upper right", ncols=2)
+    titles(ax_p, "Dia a dia: o minuto mexeu mais que o anterior?",
+           "% dos pregões em que |variação| do minuto > |variação| do minuto anterior (empates fora), "
+           "com margem de erro de 95% · 50% = igual")
+    ax_p.set_xticks(x, t["horario"], rotation=45)
+    ax_p.text(0, -0.25, "9:00 fica de fora: é a abertura e não existe minuto antes dela.",
+              transform=ax_p.transAxes, fontsize=9.5, color=INK_2)
     fig.savefig(FIGURES / f"picos_{asset.lower()}.png", dpi=160, bbox_inches="tight")
     plt.show()
 
 # %% [markdown]
 # ## 4. Depois do pico: tabela de expectativa
 # Para cada horário de pico e cada horizonte (5, 15 e 30 min): % de dias em que o preço médio sobe ou cai,
-# mediana, faixa de 10% a 90%, e % de vezes que continua na direção do minuto do pico.
+# mediana, faixa de 10% a 90%, e % de vezes que o fechamento continua na direção do minuto do pico.
 # **Normal da hora:** a mesma conta em todos os minutos comuns (que não são :00 nem :30) da mesma hora.
 
 # %%
 after = {}
 for asset in ASSETS:
-    b = bars[asset]
-    is_peak = b["minuto"].isin(PEAK_TIMES)
-    peaks, common = b[is_peak], b[~is_peak]
-    table = after_table(peaks, peaks["minuto"].map(lambda t: t.strftime("%H:%M"))).rename(columns={"grupo": "horario"})
-    table = table[table["casos"] > 0]   # 9:00 não tem minuto anterior, então não tem direção
-    normal = after_table(common, common["ts"].dt.hour).rename(columns={"grupo": "hora"})
-    normal = normal[["hora", "minutos_depois", "sobe_pct", "mediana", "p10", "p90", "continua_pct"]]
-    normal.columns = ["hora", "minutos_depois"] + [f"normal_{c}" for c in normal.columns[2:]]
-    table["hora"] = table["horario"].str[:2].astype(int)
-    table = table.merge(normal, on=["hora", "minutos_depois"]).drop(columns="hora")
+    table = after_peak_table(bars[asset])
     after[asset] = table
     table.round(2).to_csv(REPORTS / f"depois_{asset.lower()}.csv", index=False)
 
-    diff = table["continua_pct"] - table["normal_continua_pct"]
-    outside = table[diff.abs() > table["margem_pct"]]
-    print(f"\n{asset}: {len(table)} combinações horário × horizonte; "
-          f"continua_pct fora da margem em relação ao normal: {len(outside)}")
-    print(outside[["horario", "minutos_depois", "casos", "continua_pct", "normal_continua_pct", "margem_pct"]]
-          .round(1).to_string(index=False))
+    with_direction = table.dropna(subset=["continua_pct"])
+    print(f"\n{asset}: {len(table)} combinações horário × horizonte ({len(with_direction)} com direção)")
+    for h, g in with_direction.groupby("minutos_depois"):
+        n = g["casos_direcao"]
+        excess = ((g["continua_pct"] - g["normal_continua_pct"]) * n).sum() / n.sum()
+        outside = int(((g["continua_pct"] - g["normal_continua_pct"]).abs() > g["margem_pct"]).sum())
+        print(f"  {h:>2} min: continua no pico − normal da hora, somando os horários = {excess:+.2f} p.p. "
+              f"(margem ±{100 * 1.96 * (0.25 / n.sum()) ** 0.5:.2f}) · horários fora da margem: {outside} de {len(g)}")
 
 # %% [markdown]
 # ## 5. Depois do pico: o preço continua na direção do minuto do pico?
@@ -170,21 +174,21 @@ for asset, name in ASSETS.items():
     for ax, h in zip(axes, HORIZONS):
         t = after[asset][after[asset]["minutos_depois"] == h].reset_index(drop=True)
         x = range(len(t))
-        ax.axhline(50, color=INK, ls="--", lw=1)
+        t = t.dropna(subset=["continua_pct"]).reset_index(drop=True)
+        x = range(len(t))
         ax.scatter(x, t["normal_continua_pct"], s=70, marker="_", linewidths=3, color=MUTED, zorder=2,
                    label="minutos comuns da mesma hora")
         ax.errorbar(x, t["continua_pct"], yerr=t["margem_pct"], fmt="o", ms=7, color=COLOR[asset],
                     mec=INK, mew=0.8, ecolor=COLOR[asset], elinewidth=1.5, capsize=3, zorder=3,
                     label="depois do pico (com margem de erro de 95%)")
         ax.set_xticks(list(x), t["horario"], rotation=45)
-        ax.set_ylim(40, 62)
         ax.set_ylabel("% continua")
         ax.set_title(f"{h} minutos depois", loc="left", fontsize=12, fontweight="bold", color=INK)
     axes[0].legend(frameon=False, loc="upper right", ncols=2, fontsize=10)
     fig.suptitle(f"{asset} · {name}: depois do pico, o preço continua na direção do minuto do pico?",
                  x=0.125, ha="left", fontsize=15, fontweight="bold", color=INK)
-    fig.text(0.125, 0.925, "% dos dias em que o preço médio em T+h ficou do mesmo lado que o movimento do minuto do pico "
-             "· 50% = moeda", fontsize=10.5, color=INK_2)
+    fig.text(0.125, 0.925, "% dos pregões em que o fechamento em T+h ficou do mesmo lado que o movimento do fechamento "
+             "no minuto do pico · compare com o traço cinza, não com 50%", fontsize=10.5, color=INK_2)
     fig.savefig(FIGURES / f"continua_{asset.lower()}.png", dpi=160, bbox_inches="tight")
     plt.show()
 
@@ -205,6 +209,8 @@ for asset, name in ASSETS.items():
     ax.set_xticks(list(x), t["horario"], rotation=45)
     ax.set_ylabel("pontos")
     ax.legend(frameon=False, loc="upper right", ncols=3)
+    ax.text(0, -0.2, "Faixa cinza: minutos comuns da mesma hora. Às 9h, ela inclui 9:01–9:29, logo depois da abertura.",
+            transform=ax.transAxes, fontsize=9.5, color=INK_2)
     titles(ax, f"{asset} · {name}: onde o preço está 15 minutos depois do pico",
            "variação do preço médio de T a T+15, em pontos · cada barra vai de 10% a 90% dos dias "
            "(80% dos dias caem dentro dela)")
