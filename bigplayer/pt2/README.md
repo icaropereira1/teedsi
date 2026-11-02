@@ -22,6 +22,7 @@ python -m pytest tests/test_pt2_picos.py
 Saídas: `pt2/reports/picos_<ativo>.csv` (passo 1), `pt2/reports/depois_<ativo>.csv` (passo 2) e as
 figuras em `pt2/reports/figures/`.
 O código das contas está em `pt2/picos.py`, e cada função tem a definição escrita.
+Roteiro da apresentação de 03/11/2026: `pt2/ROTEIRO_APRESENTACAO.md`.
 
 ## Como cada número é calculado
 
