@@ -3,7 +3,7 @@ from datetime import time
 import pandas as pd
 import pytest
 
-from pt2.picos import add_minute_change, peak_window, summarize_peaks
+from pt2.picos import add_forward_change, add_minute_change, after_stats, peak_window, summarize_peaks
 
 
 def _bars(rows):
@@ -57,3 +57,28 @@ def test_resumo_por_horario_tem_minima_mediana_maxima_e_mediana_absoluta():
     assert row["pregoes"] == 3
     assert (row["antes_min"], row["antes_mediana"], row["antes_max"], row["antes_mediana_abs"]) == (-4, 1, 2, 2)
     assert (row["pico_min"], row["pico_mediana"], row["pico_max"], row["pico_mediana_abs"]) == (-6, 3, 9, 6)
+
+
+def test_variacao_depois_compara_com_o_preco_medio_h_minutos_depois():
+    bars = add_forward_change(add_minute_change(_bars([
+        ("2024-03-04 10:00", 100, 100, 100),
+        ("2024-03-04 10:05", 104, 104, 104),
+        ("2024-03-04 10:06", 90, 90, 90),     # nada 5 minutos depois
+    ])), horizons=[5])
+    assert bars["depois_5"].iloc[0] == 4
+    assert bars["depois_5"].iloc[1:].isna().all()
+
+
+def test_estatisticas_depois_do_pico():
+    minutes = pd.DataFrame({
+        "variacao": [2.0, 2.0, -1.0, 0.0],
+        "depois_15": [5.0, -3.0, -4.0, 1.0],
+    })
+    s = after_stats(minutes, 15)
+    assert s["casos"] == 4
+    assert (s["sobe_pct"], s["cai_pct"]) == (50, 50)
+    assert s["mediana"] == -1
+    # só os 3 casos em que o minuto mexeu: 2 continuam (+2→+5, −1→−4), 1 volta (+2→−3)
+    assert s["continua_pct"] == pytest.approx(200 / 3)
+    assert s["volta_pct"] == pytest.approx(100 / 3)
+    assert s["margem_pct"] == pytest.approx(100 * 1.96 * (0.25 / 3) ** 0.5)

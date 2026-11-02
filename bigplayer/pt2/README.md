@@ -4,7 +4,7 @@ A parte 1 (pastas `notebooks/`, `src/`, `docs/` do `bigplayer`) montou os dados 
 estratégias com estudo de evento. A parte 2 recomeça a análise pelo que o professor pediu: olhar o
 **preço** nos horários em que o volume tem pico, em **pontos**, com contas simples.
 
-**Status (2026-11-02):** pronto o passo 1 (minuto antes do pico e minuto do pico). Falta o passo 2
+**Status (2026-11-02):** prontos o passo 1 (minuto antes do pico e minuto do pico) e o passo 2
 (o que o preço faz depois do pico).
 
 ## Como rodar
@@ -19,7 +19,8 @@ python pt2/01_picos.py
 python -m pytest tests/test_pt2_picos.py
 ```
 
-Saídas: `pt2/reports/picos_wdo.csv`, `pt2/reports/picos_win.csv` e as figuras em `pt2/reports/figures/`.
+Saídas: `pt2/reports/picos_<ativo>.csv` (passo 1), `pt2/reports/depois_<ativo>.csv` (passo 2) e as
+figuras em `pt2/reports/figures/`.
 O código das contas está em `pt2/picos.py`, e cada função tem a definição escrita.
 
 ## Como cada número é calculado
@@ -35,9 +36,20 @@ O código das contas está em `pt2/picos.py`, e cada função tem a definição 
 | **Mediana do \|variação\|** | Mediana do tamanho da variação, **sem o sinal**. Responde "quanto o preço costuma andar", sem que subidas e quedas se cancelem. |
 | **Volume × tarde** | Volume mediano daquele minuto ao longo dos pregões, dividido pelo volume típico da tarde (mediana dos volumes medianos dos minutos de 14:00 a 16:59). É o gráfico de volume dos slides: 1 = normal da tarde. |
 | **Normal da hora** (`hora_mediana_abs`) | Mediana do \|variação\| de todos os minutos da hora do pico. Exemplo: para 10:00 e 10:30, todos os minutos das 10:00 às 10:59. |
+| **Variação depois do pico** (passo 2) | Preço médio em T+h **menos** o preço médio em T, em pontos, com h = 5, 15 e 30 minutos. Só existe se houve negócio exatamente h minutos depois. |
+| **% sobe / % cai** | % dos pregões em que a variação depois do pico foi positiva ou negativa. O que falta para 100% é variação zero. |
+| **Faixa de 10% a 90%** (`p10`, `p90`) | 10% dos pregões ficaram abaixo de `p10` e 10% acima de `p90`, ou seja, 80% dos pregões caem entre os dois. |
+| **% continua / % volta** | Só nos pregões em que o minuto do pico mexeu (variação de T diferente de zero). Continua = em T+h o preço está do mesmo lado do movimento de T (subiu em T e está acima em T+h, ou caiu e está abaixo). Volta = do lado oposto. |
+| **Normal da hora** (passo 2, colunas `normal_*`) | A mesma conta feita em **todos os minutos comuns** da mesma hora, ou seja, os que não são :00 nem :30. É a referência: o pico só tem algo de especial se ficar longe dela. |
+| **Margem de erro** (`margem_pct`) | `1,96 × √(0,25 / casos)`, em pontos percentuais. É a margem de 95% de uma porcentagem. Com ~1.000 pregões, dá ±3 pontos percentuais: um 53% não se distingue de 50%. |
 
 Por que **mediana** e não média: alguns dias de notícia têm variações enormes (veja os extremos abaixo).
 A média ficaria puxada por esses poucos dias, e a mediana mostra o dia comum.
+
+**Atenção ao "continua" dos minutos comuns:** ele fica em 51% a 53% em 5 minutos, e não em 50%. É
+efeito da conta, não do mercado. O preço médio é uma média de três preços do minuto, então parte do
+movimento de um minuto aparece também na média do minuto seguinte. Por isso a comparação certa é
+**pico contra minuto comum**, e não pico contra 50%.
 
 Unidades: no WDO o tick é 0,5 ponto (1 ponto = R$ 10 por contrato). No WIN o tick é 5 pontos
 (1 ponto = R$ 0,20 por contrato). Como o preço médio é uma média de 3 preços, a variação anda em
@@ -82,14 +94,45 @@ Tabela completa (todos os horários, com mínima, mediana e máxima com sinal) n
    às 9:30) caem em datas que parecem ser de payroll, inflação (CPI) e discurso do presidente do Fed.
    *A coincidência com o calendário dos EUA ainda não foi conferida dia a dia.*
 
-### O que isto NÃO diz
+### O que isto NÃO diz (passo 1)
 - Não diz quem negociou: o candle não mostra o agressor.
-- Não é estratégia. É uma descrição do que acontece em volta do pico. O que acontece **depois** do pico
-  é o passo 2.
 - Não olha a abertura (9:00), que é o maior pico do WDO.
 
-## Próximo passo (para o artigo)
-**Passo 2: o que o preço faz depois do pico.** Para cada horário, a distribuição da variação de T até
-T+5, T+15 e T+30 minutos: % de vezes que sobe, mediana e faixas (de 10% a 90%). É a "expectativa de
-preço depois do pico" que o professor pediu. O passo 2 é descritivo. Se virar regra de operação, tem que
-ser conferido no hold-out.
+## Passo 2 — o que o preço faz depois do pico
+
+Figuras:
+- `continua_<ativo>.png`: % de pregões em que o preço continua na direção do minuto do pico, em 5, 15 e
+  30 minutos, com a margem de erro. O traço cinza mostra a mesma conta nos minutos comuns da mesma hora.
+- `faixa_<ativo>.png`: onde o preço está 15 minutos depois do pico (faixa de 10% a 90% e mediana), ao
+  lado da mesma faixa nos minutos comuns.
+
+Tabela completa (17 horários × 3 horizontes, com as colunas `normal_*`): `pt2/reports/depois_<ativo>.csv`.
+
+### A "expectativa de preço depois do pico"
+A tabela funciona como consulta: dado o ativo, o horário do pico e o horizonte, ela devolve a chance de o
+preço subir, a chance de continuar na direção do minuto do pico, a mediana e a faixa onde caem 80% dos dias.
+Exemplo, **WIN, pico das 10:30, 15 minutos depois:** sobe em 49% dos pregões e cai em 51%, mediana de
+−3 pontos, e 80% dos pregões terminam entre −378 e +425 pontos.
+
+### Leitura
+1. **Depois do pico, o preço não tem direção esperada.** Em 15 minutos, sobe em 48% a 55% dos pregões no
+   WDO e em 46% a 52% no WIN. A mediana fica perto de zero: de −0,2 a +0,8 ponto no WDO e de −17 a +11
+   pontos no WIN, quando a faixa de 80% dos dias tem de ±5 a ±13 pontos (WDO) e de ±140 a ±400 pontos (WIN).
+2. **Continuar na direção do pico é quase o mesmo que num minuto comum.** Depois do pico, o preço continua
+   em 45% a 57% dos casos, e nos minutos comuns em 49% a 53%. Das 102 comparações (17 horários × 3
+   horizontes × 2 ativos), 11 saem da margem de erro. Só pelo acaso seriam esperadas ~5. São um pouco mais,
+   mas sem padrão:
+   - WDO: 9:30 (15 min), 10:00 (5 min), 14:00 (15 min), 16:00 (5 e 30 min) e 17:30 (30 min, com só 600 pregões).
+   - WIN: 10:30 (30 min), 12:00 (30 min), 15:30, 16:30 e 17:00 (5 min).
+   - Nenhum horário se repete entre WDO e WIN, e em dois casos do WDO o desvio é de reversão, não de continuação.
+
+   Isso não sustenta uma regra de operação. Se o grupo quiser testar algum desses horários, o teste tem
+   que ser escrito antes e rodado no hold-out (o último ano), uma vez só.
+3. **O pico muda o tamanho do movimento, não a direção.** Em alguns picos da manhã, a faixa de 15 minutos
+   fica mais larga que a dos minutos comuns: WIN 10:30 (+17%) e 12:00 (+18%), WDO 10:00 (+15%) e 12:00
+   (+23%). Nos demais horários, a largura fica entre 0,9 e 1,1 vez a normal.
+
+### O que isto NÃO diz (passo 2)
+- Não é estratégia e não inclui custo. Em 15 minutos, a mediana depois do pico é menor que 1 tick na maioria dos horários.
+- Os números são da exploração (até 2025). O hold-out não foi usado.
+- 9:00 fica de fora também aqui: sem minuto anterior não há direção do minuto do pico.
