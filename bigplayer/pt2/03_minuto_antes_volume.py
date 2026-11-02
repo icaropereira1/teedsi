@@ -11,11 +11,11 @@
 #
 # **Entrada:** `data/interim/<ativo>_m1_limpo.parquet`. **Saídas:** `pt2/reports/antes_pico_<ativo>.csv` e
 # `pt2/reports/figures/{volume_picos_anotado,antes_vs_pico_preco,antes_vs_pico_contratos,janela_picos_<ativo>,zoom_picos_<ativo>}.png`
-# e `pt2/reports/zoom_picos_<ativo>.csv`.
+# e `pt2/reports/{zoom_picos,x_y_picos}_<ativo>.csv`, `x_y_picos.png` e `x_y_comparacao.png`.
 
 # %%
 import sys
-from datetime import time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 _here = Path.cwd()
@@ -294,3 +294,99 @@ for asset, name in ASSETS.items():
              fontsize=10.5, color=INK_2)
     fig.savefig(FIGURES / f"zoom_picos_{asset.lower()}.png", dpi=150, bbox_inches="tight")
     plt.show()
+
+# %% [markdown]
+# ## 7. x e y em cada pico: mediana do preço no pico (x) e no minuto antes (y)
+# - nível: mediana do preço médio naquele minuto, entre todos os pregões;
+# - desde a abertura: o mesmo, mas medido em relação ao 1º minuto do mesmo pregão;
+# - diferença dia a dia: mediana de (preço no pico − preço no minuto antes) dentro de cada pregão.
+# Atenção: "x − y" com níveis NÃO é a mediana da diferença dia a dia, e pode até ter o sinal trocado.
+
+# %%
+def br_level(x: float) -> str:
+    return f"{x:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+xy = {}
+for asset in ASSETS:
+    b = bars[asset].copy()
+    b["desde_abertura"] = b["preco_medio"] - b.groupby("session_date")["preco_medio"].transform("first")
+    level = b.pivot(index="session_date", columns="minuto", values="preco_medio")
+    rel = b.pivot(index="session_date", columns="minuto", values="desde_abertura")
+    rows = []
+    for t, h in zip(PEAKS, LABELS):
+        before = (datetime.combine(date(2000, 1, 1), t) - timedelta(minutes=1)).time()
+        d = pd.DataFrame({"x": level[t], "y": level[before], "xr": rel[t], "yr": rel[before]}).dropna()
+        rows.append({"horario": h, "pregoes": len(d),
+                     "x_nivel": d["x"].median(), "y_nivel": d["y"].median(),
+                     "x_menos_y_nivel": d["x"].median() - d["y"].median(),
+                     "x_desde_abertura": d["xr"].median(), "y_desde_abertura": d["yr"].median(),
+                     "diferenca_dia_a_dia": (d["x"] - d["y"]).median()})
+    xy[asset] = pd.DataFrame(rows)
+    xy[asset].round(2).to_csv(REPORTS / f"x_y_picos_{asset.lower()}.csv", index=False)
+    print(asset)
+    print(xy[asset].round(2).to_string(index=False))
+
+fig, axes = plt.subplots(2, 1, figsize=(16, 13), gridspec_kw={"hspace": 0.5})
+for ax, (asset, name) in zip(axes, ASSETS.items()):
+    med = bars[asset].groupby("minuto")["vol"].median()
+    x = [minutes_since_nine(t) for t in med.index]
+    ax.plot(x, med.values, color=COLOR[asset], lw=2, label="volume (mediana dos pregões)")
+    top = med.max()
+    decimals = 2 if asset == "WDO" else 1
+    for i, (t, row) in enumerate(zip(PEAKS, xy[asset].itertuples())):
+        xp = minutes_since_nine(t)
+        yp = med[t]
+        ax.annotate("", xy=(xp + 6, yp + top * 0.18), xytext=(xp, yp),
+                    arrowprops=dict(arrowstyle="->", color="#2E7D32", lw=1.8))
+        ax.annotate("", xy=(xp - 1, yp + top * 0.22), xytext=(xp - 1, yp),
+                    arrowprops=dict(arrowstyle="->", color="#66BB6A", lw=1.8))
+        ax.text(xp + 7, yp + top * 0.19, "x", color="#2E7D32", fontsize=13, fontweight="bold")
+        ax.text(xp - 4, yp + top * 0.24, "y", color="#66BB6A", fontsize=13, fontweight="bold")
+        text = (f"pico das {row.horario}\n"
+                f"nível: x = {br_level(row.x_nivel)} · y = {br_level(row.y_nivel)}\n"
+                f"desde a abertura: x = {br(row.x_desde_abertura, decimals)} · y = {br(row.y_desde_abertura, decimals)}\n"
+                f"diferença dia a dia (x − y): {br(row.diferenca_dia_a_dia, decimals)} pt")
+        ax.text(5 + i * 113, top * (1.75 if i % 2 == 0 else 1.42), text, fontsize=8.6, va="bottom",
+                bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=GRID))
+    hours = range(9, 19)
+    ax.set_xticks([(h - 9) * 60 for h in hours], [f"{h}h" for h in hours])
+    ax.set_xlim(-5, max(x) + 5)
+    ax.set_ylim(0, top * 2.15)
+    ax.yaxis.set_major_formatter(mil_axis)
+    ax.set_ylabel("contratos por minuto")
+    ax.set_title(f"{asset} · {name}", loc="left", fontsize=15, fontweight="bold")
+fig.subplots_adjust(top=0.9)
+fig.suptitle("x = mediana do preço no pico · y = mediana do preço no minuto antes (t−1)", x=0.125, y=1.0,
+             ha="left", fontsize=18, fontweight="bold")
+fig.text(0.125, 0.95, "preço = preço médio (máx + mín + fech) / 3, em pontos · nível = preço em si; desde a abertura = "
+         "preço − preço do 1º minuto do dia · diferença dia a dia = mediana de (x − y) dentro de cada pregão",
+         fontsize=10.5, color=INK_2)
+fig.savefig(FIGURES / "x_y_picos.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %% [markdown]
+# ## 8. Por que não subtrair as medianas dos níveis
+
+# %%
+fig, axes = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={"wspace": 0.2})
+for ax, (asset, name) in zip(axes, ASSETS.items()):
+    t = xy[asset]
+    xs = range(len(t))
+    ax.bar([i - 0.2 for i in xs], t["x_menos_y_nivel"], width=0.38, color=MINUTE_COLOR[-2], edgecolor=INK,
+           label="mediana(x) − mediana(y), com níveis")
+    ax.bar([i + 0.2 for i in xs], t["diferenca_dia_a_dia"], width=0.38, color=COLOR[asset], edgecolor=INK,
+           label="mediana de (x − y) dentro de cada dia")
+    ax.axhline(0, color=INK, lw=1)
+    ax.set_xticks(list(xs), t["horario"])
+    ax.set_xlabel("horário do pico")
+    ax.yaxis.set_major_formatter(num_axis)
+    ax.set_ylabel("pontos")
+    ax.legend(frameon=False, loc="lower left", fontsize=9.5)
+    ax.set_title(f"{asset} · {name}", loc="left", fontsize=13, fontweight="bold")
+fig.suptitle("Subtrair medianas de níveis engana: o sinal pode até trocar", x=0.125, y=1.03, ha="left",
+             fontsize=17, fontweight="bold")
+fig.text(0.125, 0.965, "a mediana do nível depende de quais anos e dias entram na conta; a diferença certa é a de cada "
+         "dia (pico − minuto antes), e só depois a mediana", fontsize=10.5, color=INK_2)
+fig.savefig(FIGURES / "x_y_comparacao.png", dpi=150, bbox_inches="tight")
+plt.show()
