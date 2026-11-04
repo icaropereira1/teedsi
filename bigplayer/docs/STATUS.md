@@ -3,6 +3,8 @@
 > Leia este arquivo primeiro. Ele diz **em que pé o projeto está**, **o que cada commit trouxe** e **qual é o próximo passo**.
 > O plano completo e o checklist estão em [`ARCHITECTURE.md`](ARCHITECTURE.md) (seção 8). Atualize este arquivo a cada etapa concluída.
 
+> **Parte 2 (desde 2026-11-02):** a análise recomeçou em [`../pt2/`](../pt2/README.md), focada no preço em volta dos horários de pico de volume. Este arquivo registra a parte 1.
+
 **Última atualização:** 2026-10-14 · **Fase atual:** 2 — Hipótese de sinal (Gate 1 em M1: no-go; aguardando decisão do grupo) · **Branch:** `feat/bigplayer-win-eda` (a partir da `main`; análise inicial do WIN)
 
 ## Em uma frase
