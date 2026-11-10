@@ -18,8 +18,13 @@
 | Caminho | O que é |
 |---|---|
 | `README.md` | Este guia |
+| `ROTEIRO_APRESENTACAO.md` | Roteiro completo de fala para 7 slides (~10–12 min) |
 | `TABELAS.md` | **Todas** as tabelas (WDO, WIN, dolarizado × alta/baixa × 19 janelas), prontas para virar slide |
-| `graficos/f1_estrangeiro_x_pf.png` | Gráfico de divergência estrangeiro × pessoa física |
+| `graficos/01_todos_vs_alta_baixa_dia.png` | Pico do `DIA` (`T−1` a `T+15`): por que separar alta e baixa revela o movimento |
+| `graficos/02_wdo_win_janelas_30min.png` | WDO e WIN nas 18 janelas de 30 min (`T` vs `T+15`): manhã × tarde |
+| `graficos/03_indice_dolarizado_manha_tarde.png` | Índice dolarizado (`1000 × WIN / WDO`): evolução `T−1` a `T+15` e janelas de 30 min |
+| `graficos/04_fluxo_estrangeiro_x_pf.png` | Gráfico de divergência estrangeiro × pessoa física (no padrão visual dos slides; também em `f1_estrangeiro_x_pf.png`) |
+| `graficos/05_resumo_comparativo_t15.png` | Painel resumo comparando manhã, tarde e pico do `DIA` em `T+15` nos 3 ativos |
 | `dados/medianas_pico30/` | 9 CSVs com as medianas (`pico30_<wdo|win|dolarizado>_<alta|baixa|todos>.csv`) |
 | `dados/eventos/` | 3 arquivos `.parquet` com cada pico e cada offset (base para novos gráficos) |
 | `dados/fluxo_investidores/fluxo_investidores.csv` | Fluxo diário por tipo de investidor (R$ milhões) |
@@ -130,16 +135,16 @@ Estatísticas diárias (R$ milhões): estrangeiro média 130, desvio-padrão 1.4
 5. **Fluxo de investidores:** o gráfico `f1_estrangeiro_x_pf.png` e os números de divergência.
 6. **Limitações** (seção 7).
 
-Os gráficos do **pico de volume** (WIN, WDO e dolarizado) ainda **não foram feitos**; só as tabelas. Quem for montar os slides pode gerar gráficos a partir de
-`dados/eventos/*.parquet` ou dos CSVs de `dados/medianas_pico30/`, ou pedir para eu gerá-los.
+Os gráficos no padrão visual dos slides já estão gerados em `graficos/01_*.png` a `05_*.png`, e o roteiro de fala de 7 slides está em `ROTEIRO_APRESENTACAO.md`.
 
 ## 9. Como reproduzir
 A partir de `teedsi/bigplayer/` (com o ambiente `../.venv`):
 
 ```bash
-../.venv/bin/python notebooks/09_horizontes_t.py          # etapas 1 e 2 (horários fixos, bps)
-../.venv/bin/python notebooks/10_pico_volume_pontos.py    # etapas 4 e 5 (pico de volume, pontos, WDO, WIN, dolarizado)
-../.venv/bin/python notebooks/11_fluxo_investidores.py    # fluxo de investidores (página pública, sem token)
+../.venv/bin/python notebooks/09_horizontes_t.py            # etapas 1 e 2 (horários fixos, bps)
+../.venv/bin/python notebooks/10_pico_volume_pontos.py      # etapas 4 e 5 (pico de volume, pontos, WDO, WIN, dolarizado)
+../.venv/bin/python notebooks/11_fluxo_investidores.py      # fluxo de investidores (página pública, sem token)
+../.venv/bin/python notebooks/12_graficos_apresentacao.py   # gráficos da apresentação de 12/11 no padrão visual dos slides
 ```
 
 O módulo com as funções está em `src/evaluation/horizons.py` (cópia em `codigo/horizons.py`).
