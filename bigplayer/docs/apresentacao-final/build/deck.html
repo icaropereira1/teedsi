@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Big Player · apresentação final</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #F1EEE9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1A1A1A; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; background: #F1EEE9;
+           padding: 34px 50px 0 50px; page-break-after: always; break-after: page; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .kicker { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #E06388; }
+  h1 { font-size: 32px; line-height: 1.15; margin-top: 4px; }
+  .lead { font-size: 16px; color: #5C5852; margin-top: 6px; max-width: 1150px; }
+  .foot { position: absolute; left: 50px; right: 50px; bottom: 14px; display: flex; justify-content: space-between;
+          font-size: 12px; color: #8E887F; border-top: 1px solid #DAD5CD; padding-top: 6px; }
+  .row { display: flex; gap: 30px; margin-top: 16px; }
+  .chart { flex: 0 0 auto; }
+  .chart h3 { font-size: 17px; }
+  .chart .sub { font-size: 13px; color: #5C5852; margin: 2px 0 6px; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .src { font-size: 11px; color: #8E887F; margin-top: 2px; }
+  .side { flex: 1; display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+  .side h4 { font-size: 15px; color: #7B57C8; text-transform: uppercase; letter-spacing: .05em; }
+  .side ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .side li { font-size: 14.5px; line-height: 1.35; padding-left: 16px; position: relative; }
+  .side li::before { content: ""; position: absolute; left: 0; top: 7px; width: 7px; height: 7px; border-radius: 50%; background: #E06388; }
+  .box { background: #BCECE6; border: 1.6px solid #1A1A1A; border-radius: 12px; padding: 11px 14px; font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .box small { display: block; font-weight: 400; font-size: 13px; margin-top: 4px; }
+  .strip { display: flex; gap: 14px; margin-top: 8px; }
+  .strip > div { flex: 1; font-size: 14px; line-height: 1.35; background: #fff9; border-left: 4px solid #7B57C8; padding: 7px 12px; border-radius: 4px; }
+  .strip > div.o { border-color: #F0A030; } .strip > div.m { border-color: #1A1A1A; background: #BCECE6; font-weight: 600; }
+  b.p { color: #7B57C8; } b.o { color: #B86A00; }
+  /* capa */
+  .cover h1 { font-size: 64px; margin-top: 70px; }
+  .cover .lead { font-size: 22px; max-width: 640px; }
+  .authors { margin-top: 26px; font-size: 16px; line-height: 1.6; }
+  .tl { position: absolute; right: 50px; top: 70px; width: 500px; }
+  .tl h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: #5C5852; margin-bottom: 10px; }
+  .step { position: relative; padding: 0 0 15px 30px; border-left: 3px solid #DAD5CD; margin-left: 9px; }
+  .step:last-child { border-color: transparent; }
+  .step::before { content: attr(data-n); position: absolute; left: -14px; top: -2px; width: 25px; height: 25px; border-radius: 50%;
+                  background: #7B57C8; color: #fff; font-size: 13px; font-weight: 700; text-align: center; line-height: 25px; }
+  .step.o::before { background: #F0A030; } .step.k::before { background: #E06388; }
+  .step b { font-size: 16px; } .step span { display: block; font-size: 13.5px; color: #5C5852; line-height: 1.35; }
+  .kpis { position: absolute; left: 50px; bottom: 54px; display: flex; gap: 14px; }
+  .kpi { background: #fff9; border-radius: 10px; padding: 10px 16px; min-width: 150px; }
+  .kpi b { display: block; font-size: 26px; color: #7B57C8; } .kpi span { font-size: 13px; color: #5C5852; }
+</style>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script>
+  // Pré-visualização de um slide só: deck.html?s=3
+  document.addEventListener('DOMContentLoaded', () => {
+    const n = +new URLSearchParams(location.search).get('s');
+    if (n) document.querySelectorAll('.slide').forEach((e, i) => { if (i + 1 !== n) e.style.display = 'none'; });
+  });
+</script>
+</head>
+<body>
+
+<!-- ============ 1 · CAPA ============ -->
+<section class="slide cover">
+  <div class="kicker">TEEDSI · Data Science no mercado financeiro</div>
+  <h1>Big Player</h1>
+  <p class="lead">O que fizemos desde o início: dos dados brutos de 1 minuto até o preço nos picos de volume do mini dólar e do mini índice.</p>
+  <div class="authors">Gabriel Camargo Silva · Ícaro Alves de Sá · João Gabriel Abreu Soares<br><span style="color:#5C5852">Novembro de 2026</span></div>
+  <div class="tl">
+    <h3>Linha do tempo do projeto</h3>
+    <div class="step" data-n="1"><b>Arquitetura e dados</b><span>Tese do "vácuo", carga dos candles, hold-out de 12 meses trancado, calendário B3, buracos e rolagem.</span></div>
+    <div class="step" data-n="2"><b>Gate 1: estudo de evento</b><span>6 definições de pico de fluxo, testes pré-registrados nos dois ativos. Resultado: no-go.</span></div>
+    <div class="step o" data-n="3"><b>Parte 2 (03/11): preço nos picos</b><span>A pedido do professor: contas simples, em pontos, no minuto antes, no minuto do pico e depois.</span></div>
+    <div class="step o" data-n="4"><b>12/11: alta × baixa, dolarizado, fluxo</b><span>T = minuto de maior volume, horizontes até T+15, índice em dólar e estrangeiro × pessoa física.</span></div>
+    <div class="step k" data-n="5"><b>Hoje: síntese e próximos passos</b><span>O pico de volume diz quanto o preço anda, não para onde.</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>~5 anos</b><span>de candles de 1 minuto (2020–2025)</span></div>
+    <div class="kpi"><b>1,19 mi</b><span>candles na exploração (WDO + WIN)</span></div>
+    <div class="kpi"><b>46</b><span>testes pré-registrados no Gate 1</span></div>
+    <div class="kpi"><b>12 meses</b><span>de hold-out ainda intocados</span></div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>1 / 7</span></div>
+</section>
+
+<!-- ============ 2 · DADOS ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 1 · Arquitetura e dados (set–out/2026)</div>
+  <h1>Uma base limpa, com o último ano trancado para o teste final</h1>
+  <div class="row">
+    <div class="chart" style="width:800px">
+      <h3>Período coberto pelos dados de cada ativo</h3>
+      <p class="sub">candles de 1 minuto exportados do MetaTrader 5 · barras = período de exploração e de hold-out · rosa = dias úteis sem nenhum candle</p>
+      <div id="c-cobertura"></div>
+      <p class="src">Fonte: reports/split_manifest*.json e reports/buracos_*.csv · exploração WDO 17/09/2020–01/04/2025, WIN 15/10/2020–25/09/2025</p>
+    </div>
+    <div class="side">
+      <h4>O que fizemos</h4>
+      <ul>
+        <li><b>Qualidade conferida:</b> sem nulos nem duplicatas, OHLC 100% consistente, preços sempre no tick.</li>
+        <li><b>Buracos marcados, não apagados:</b> 3 trechos sem dado (o maior, jun–set/2023). Janelas móveis não atravessam o buraco.</li>
+        <li><b>Calendário B3 e rolagem:</b> feriados, sessão curta/longa e dia de troca de contrato marcados em cada candle.</li>
+        <li><b>Volume depende do relógio:</b> a manhã negocia ~3× a tarde, então o volume foi normalizado por horário (z-score).</li>
+      </ul>
+      <div class="box">99,9% dos candles ficaram utilizáveis, e o hold-out só abre uma vez, na avaliação final.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>2 / 7</span></div>
+</section>
+
+<!-- ============ 3 · GATE 1 ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 2 · Gate 1: estudo de evento (out/2026)</div>
+  <h1>O pico de fluxo não previu a direção do preço: Gate 1 deu no-go</h1>
+  <div class="row">
+    <div class="chart" style="width:800px">
+      <h3>Efeito de seguir a direção do evento, 15 minutos depois</h3>
+      <p class="sub">retorno na direção do evento menos o de minutos comuns parecidos (controle), em bps · barra = intervalo de confiança de 95% (bootstrap por dia)</p>
+      <div id="c-gate1"></div>
+      <p class="src">Fonte: reports/estudo_evento_*.csv e confirmacao_a1_win.csv · limite com correção de Bonferroni: p &lt; 0,0033 (rodada 1) e p &lt; 0,0017 (rodada 2)</p>
+    </div>
+    <div class="side">
+      <h4>Como testamos</h4>
+      <ul>
+        <li><b>Regras escritas antes de ver o resultado</b> (pré-registro): 6 definições de evento, 5 horizontes, 2 ativos.</li>
+        <li>Entrada no candle seguinte, saída no mesmo pregão, sem olhar o futuro.</li>
+        <li><b>Nenhum dos 46 testes passou.</b> A maioria dos efeitos é negativa ou nula, e o sinal troca de ano para ano.</li>
+        <li><b>A1 (pausa com volume)</b> foi o único positivo no WDO (+1,34 bps, p = 0,0145), mas não passou o limite e não se repetiu no WIN (p = 0,18).</li>
+      </ul>
+      <div class="box">Com candles de 1 minuto, não há sinal de continuação depois do pico de fluxo.<small>Mesmo 1 bp seria menor que o custo de ida e volta (2 a 3 ticks).</small></div>
+    </div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>3 / 7</span></div>
+</section>
+
+<!-- ============ 4 · MINUTO DO PICO ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 3 · Parte 2, apresentação de 03/11</div>
+  <h1>Nos horários de pico, o preço anda mais, mas o minuto antes é comum</h1>
+  <div class="row" style="margin-top:10px">
+    <div class="chart" style="width:1180px">
+      <h3>Volume e movimento do preço nos horários redondos (:00 e :30)</h3>
+      <p class="sub">mediana de 1.034 pregões (WDO) e 1.118 (WIN) · movimento = |variação do preço médio (máx + mín + fech) / 3| no minuto, comparado dia a dia</p>
+      <div id="c-minuto"></div>
+    </div>
+  </div>
+  <div class="strip" style="position:absolute;left:50px;right:50px;bottom:40px">
+    <div><b class="p">Volume:</b> picos às 9h30–12h, até 4,2× a tarde. Os maiores movimentos caem em divulgações dos EUA (CPI, payroll).</div>
+    <div class="o"><b class="o">WIN:</b> o minuto do pico mexe mais em 15 de 17 horários (até 65% dos dias, às 10h). <b class="p">WDO:</b> em 7 de 17.</div>
+    <div class="m">No minuto antes do pico, a mediana com sinal é ~0: o preço não "avisa" a direção.</div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>4 / 7</span></div>
+</section>
+
+<!-- ============ 5 · DEPOIS DO PICO ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 3 · Parte 2, apresentação de 03/11</div>
+  <h1>Depois do pico, o preço continua tanto quanto num minuto comum</h1>
+  <div class="row">
+    <div class="chart" style="width:800px">
+      <h3>% dos pregões em que o preço segue a direção do minuto do pico, 15 min depois</h3>
+      <p class="sub">fechamento em T+15 do mesmo lado do movimento em T · ponto = pico, traço cinza = minutos comuns (não :00/:30) da mesma hora</p>
+      <div id="c-depois"></div>
+      <p class="src">Fonte: pt2/reports/depois_*.csv · margem = 1,96 × √(0,25 / casos), cerca de ±3 p.p.</p>
+    </div>
+    <div class="side">
+      <h4>O que o preço faz depois</h4>
+      <ul>
+        <li><b>Sem direção:</b> 15 min depois, sobe em 47% a 55% dos pregões (WDO) e 46% a 52% (WIN). Mediana perto de zero.</li>
+        <li><b>Continuar = minuto comum:</b> somando os horários, a diferença é de +0,0 a +0,4 p.p., dentro da margem de ±0,8.</li>
+        <li><b>Mas o movimento é maior:</b> a faixa de 80% dos dias é mais larga que a normal em 13 de 18 horários (WDO) e 12 de 18 (WIN).</li>
+      </ul>
+      <div class="box">O pico de volume muda o tamanho do movimento, não a direção.<small>A mediana depois do pico é menor que 1 tick na maioria dos horários.</small></div>
+    </div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>5 / 7</span></div>
+</section>
+
+<!-- ============ 6 · ALTA x BAIXA ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 4 · Apresentação de 12/11</div>
+  <h1>Separando dias de alta e de baixa, o movimento aparece e não reverte</h1>
+  <div class="row" style="margin-top:10px">
+    <div class="chart" style="width:1180px">
+      <h3>Preço em volta do minuto de maior volume do pregão, de T−1 a T+15</h3>
+      <p class="sub">mediana da variação do fechamento contra T−1 (1 minuto antes do pico), em pontos, no mesmo pregão · dia de alta = último fechamento acima da primeira abertura</p>
+      <div id="c-altabaixa"></div>
+    </div>
+  </div>
+  <div class="strip" style="position:absolute;left:50px;right:50px;bottom:40px">
+    <div>O grosso do movimento acontece <b>no próprio minuto do pico</b>; há um respiro em T+3, mas não há reversão até T+15.</div>
+    <div class="o">O efeito é maior <b>de manhã</b> (9h–11h) e encolhe depois das 13h (WDO: 0 a 1 tick). No dolarizado, ainda avança até T+15.</div>
+    <div class="m">Atenção: só se sabe se o dia foi de alta no fechamento. É descritivo, não é um sinal operável.</div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>6 / 7</span></div>
+</section>
+
+<!-- ============ 7 · FLUXO + CONCLUSÃO ============ -->
+<section class="slide">
+  <div class="kicker">Etapa 4 · 12/11 · e síntese</div>
+  <h1>Estrangeiro e pessoa física andam em sentidos opostos</h1>
+  <div class="row">
+    <div class="chart" style="width:740px">
+      <h3>Saldo acumulado de compras − vendas na B3, por tipo de investidor</h3>
+      <p class="sub">fluxo diário somado desde <span data-fluxo="ini"></span>, em R$ bilhões · <span data-fluxo="n"></span> pregões · correlação diária <span data-fluxo="corr"></span>, sinais opostos em <span data-fluxo="opostos"></span> dos dias</p>
+      <div id="c-fluxo"></div>
+      <p class="src">Fonte: dadosdemercado.com.br/fluxo (página pública) · período nov/2025–nov/2026, sem sobreposição com os candles, por isso não foi cruzado com o preço</p>
+    </div>
+    <div class="side">
+      <h4>Conclusões do projeto</h4>
+      <ul>
+        <li><b>Dados prontos e auditados</b>, com hold-out intacto para um teste final honesto.</li>
+        <li><b>Volume alto, sozinho, não identifica o big player</b> nem prevê direção (Gate 1: no-go).</li>
+        <li><b>O pico de volume diz quanto o preço vai mexer</b>, não para onde.</li>
+        <li>Separar alta e baixa mostra que o pico acompanha a tendência do dia, mas isso só se vê depois do fechamento.</li>
+      </ul>
+      <div class="box">Próximos passos: dados negócio a negócio (quem agrediu), fluxo de investidores no mesmo período do preço, e um teste único no hold-out.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Big Player · TEEDSI</span><span>7 / 7</span></div>
+</section>
+
+</body>
+</html>

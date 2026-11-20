@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Big Player · instruções de apresentação</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 16mm 16mm; }
+  * { box-sizing: border-box; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1A1A1A; font-size: 10.5pt; line-height: 1.45; margin: 0; }
+  h1 { font-size: 22pt; margin: 0 0 2pt; }
+  .kicker { font-size: 9pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #E06388; }
+  .lead { color: #5C5852; font-size: 11pt; margin: 0 0 10pt; }
+  h2 { font-size: 14pt; margin: 16pt 0 6pt; padding-bottom: 3pt; border-bottom: 2px solid #7B57C8; }
+  h3 { font-size: 12pt; margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.8pt; margin: 4pt 0 8pt; }
+  th { text-align: left; background: #F1EEE9; padding: 5pt 6pt; border-bottom: 1.5px solid #1A1A1A; }
+  td:nth-child(4) { white-space: nowrap; }
+  td { padding: 4pt 6pt; border-bottom: 1px solid #DAD5CD; vertical-align: top; }
+  .card { border: 1px solid #DAD5CD; border-left: 5px solid #7B57C8; border-radius: 6px; padding: 9pt 12pt; margin: 0 0 10pt; break-inside: avoid; }
+  .card.o { border-left-color: #F0A030; } .card.k { border-left-color: #E06388; }
+  .meta { font-size: 9.5pt; color: #5C5852; margin: 1pt 0 6pt; }
+  .lbl { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #7B57C8; margin: 6pt 0 2pt; }
+  .fala { background: #F1EEE9; border-radius: 5px; padding: 6pt 10pt; font-style: italic; margin: 0; }
+  .trans { font-size: 9.8pt; margin: 6pt 0 0; } .trans b { color: #E06388; }
+  ul { margin: 2pt 0; padding-left: 16pt; } li { margin: 1.5pt 0; }
+  .box { background: #BCECE6; border: 1.4px solid #1A1A1A; border-radius: 8px; padding: 7pt 11pt; margin: 6pt 0 10pt; font-weight: 600; }
+  .two { display: flex; gap: 14pt; } .two > div { flex: 1; }
+  .pb { break-before: page; }
+  .check li { list-style: none; margin-left: -14pt; } .check li::before { content: "☐  "; }
+</style>
+</head>
+<body>
+
+<div class="kicker">Big Player · TEEDSI</div>
+<h1>Instruções para apresentar os slides</h1>
+<p class="lead">Guia do deck <b>Big_Player_apresentacao_final.pdf</b> (7 slides), que resume tudo o que o projeto fez desde o início. Tempo-alvo: <b>cerca de 12 minutos</b>, deixando folga para perguntas dentro de 15.</p>
+
+<h2>1. Visão geral</h2>
+<table>
+  <tr><th>#</th><th>Slide</th><th>Gráfico</th><th>Tempo</th><th>Quem fala (sugestão)</th></tr>
+  <tr><td>1</td><td>Capa e linha do tempo</td><td>Linha do tempo e números do projeto</td><td>1,0 min</td><td>Gabriel Camargo</td></tr>
+  <tr><td>2</td><td>Dados: base limpa, último ano trancado</td><td>Período coberto pelos dados de cada ativo</td><td>2,0 min</td><td>Gabriel Camargo</td></tr>
+  <tr><td>3</td><td>Gate 1: no-go</td><td>Efeito de seguir a direção do evento (IC 95%)</td><td>2,0 min</td><td>Ícaro Alves</td></tr>
+  <tr><td>4</td><td>Parte 2: o minuto do pico</td><td>Volume × tarde e % em que o pico mexe mais</td><td>2,0 min</td><td>Ícaro Alves</td></tr>
+  <tr><td>5</td><td>Parte 2: depois do pico</td><td>% em que o preço continua, pico × minuto comum</td><td>1,5 min</td><td>João Gabriel</td></tr>
+  <tr><td>6</td><td>12/11: dias de alta × baixa</td><td>Preço de T−1 a T+15 no pico do pregão</td><td>2,0 min</td><td>João Gabriel</td></tr>
+  <tr><td>7</td><td>Fluxo de investidores e conclusões</td><td>Saldo acumulado estrangeiro × pessoa física</td><td>1,5 min</td><td>Gabriel e João</td></tr>
+</table>
+<div class="box">O fio da apresentação, em uma frase: preparamos os dados com cuidado, testamos se o pico de volume prevê a direção do preço (não prevê), e mostramos que ele indica o tamanho do movimento, não o sentido.</div>
+
+<h2>2. Antes de apresentar</h2>
+<ul class="check">
+  <li>Abra o PDF em tela cheia (no Acrobat ou no navegador: Ctrl+L ou F11) e confira que os 7 slides aparecem inteiros.</li>
+  <li>Combine quem fala cada slide e ensaie as transições pelo menos uma vez, com cronômetro.</li>
+  <li>Em cada gráfico, leia primeiro <b>o título e o subtítulo</b>: eles dizem o que está sendo medido. Depois aponte a legenda e só então o achado.</li>
+  <li>Tenha à mão os "números de bolso" (seção 4) e as respostas da seção 5.</li>
+  <li>Se o tempo apertar, encurte os slides 4 e 5 (leiam só a caixa de conclusão). Não cortem o slide 3: é o resultado central da parte 1.</li>
+</ul>
+
+<h2>3. Roteiro slide a slide</h2>
+
+<div class="card k">
+  <h3>Slide 1 · Capa e linha do tempo</h3>
+  <div class="meta">1,0 min · Gabriel Camargo</div>
+  <div class="lbl">Apontar</div>
+  <ul><li>A linha do tempo à direita (5 etapas) e os quatro números embaixo.</li></ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Boa tarde. Nosso projeto é o Big Player: entender se dá para perceber, nos dados de mini dólar e mini índice, a atuação de quem opera muito e move o preço, e seguir esse movimento, como um carro que pega o vácuo do da frente. Hoje vamos resumir tudo o que fizemos: a preparação dos dados, o teste estatístico da primeira hipótese, a análise do preço nos picos de volume que o professor pediu, e a última etapa, com dias de alta e de baixa e o fluxo de investidores. São cerca de cinco anos de candles de 1 minuto, e o último ano de cada ativo ficou guardado, sem uso, para um teste final."</p>
+  <p class="trans"><b>Transição:</b> "Começando pelos dados."</p>
+</div>
+
+<div class="card">
+  <h3>Slide 2 · Uma base limpa, com o último ano trancado</h3>
+  <div class="meta">2,0 min · Gabriel Camargo · gráfico: período coberto pelos dados de cada ativo</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>Barra roxa = WDO, laranja = WIN: período de <b>exploração</b>, o único usado nas análises.</li>
+    <li>Parte hachurada = <b>hold-out</b>, os últimos 12 meses, trancados no código.</li>
+    <li>Faixas rosa = <b>buracos</b>: dias úteis sem nenhum candle. O maior vai de jun a set/2023 (75 pregões no WDO, 93 no WIN).</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Usamos candles de 1 minuto exportados do MetaTrader: cerca de 575 mil no mini dólar e 618 mil no mini índice. Antes de qualquer análise, separamos o último ano de cada ativo, a parte hachurada, e trancamos esses dados no código: eles só serão abertos uma vez, para validar o resultado final. Depois conferimos a qualidade: não há nulos nem duplicatas e os preços estão sempre no tick certo. O problema sério foram os buracos, em rosa: o maior deixa três meses e meio sem dado em 2023. Decidimos não apagar nada, só marcar cada candle com o calendário da B3, os feriados, o trecho contínuo e o dia de rolagem de contrato. E um achado que guiou o resto: a manhã negocia cerca de três vezes o volume da tarde, então todo indicador de volume precisou ser comparado com o mesmo horário de outros dias."</p>
+  <p class="trans"><b>Transição:</b> "Com a base pronta, testamos a hipótese principal."</p>
+</div>
+
+<div class="card">
+  <h3>Slide 3 · Gate 1: o pico de fluxo não previu a direção</h3>
+  <div class="meta">2,0 min · Ícaro Alves · gráfico: efeito de seguir a direção do evento, 15 minutos depois</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>Cada linha é uma definição de "evento de big player". A bolinha é o efeito em bps; a barra é o intervalo de confiança de 95%.</li>
+    <li>A linha vertical preta é o <b>zero</b>: quase todas as barras cruzam o zero.</li>
+    <li>A coluna da direita é o p-valor. As faixas verde-água marcam o A1, o único candidato.</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"A hipótese era: quando o volume dispara, o preço continua na direção daquele minuto. Escrevemos as regras antes de olhar o resultado: seis definições de evento, cinco horizontes de tempo e os dois ativos. A entrada é sempre no candle seguinte, para não usar informação do futuro, e o resultado é comparado com minutos comuns parecidos. O gráfico mostra o horizonte de 15 minutos. Quase todos os efeitos estão perto de zero ou negativos, e as barras cruzam o zero. O único positivo foi o A1, a pausa com volume, no mini dólar: +1,3 bps. Mas, com 46 testes, o limite corrigido de significância é bem mais exigente, e ele não passou. Testamos o A1 uma única vez no mini índice para confirmar, e não confirmou. Então a conclusão do Gate 1 é no-go: com candle de 1 minuto, não há sinal de continuação. E mesmo um efeito de 1 bp seria menor que o custo de entrar e sair."</p>
+  <p class="trans"><b>Transição:</b> "A partir daqui, a pedido do professor, voltamos ao básico: olhar o preço nos picos, em pontos."</p>
+</div>
+
+<div class="card o">
+  <h3>Slide 4 · Nos horários de pico, o preço anda mais</h3>
+  <div class="meta">2,0 min · Ícaro Alves · gráfico em dois painéis, A (volume) e B (movimento)</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>Painel A: barras = volume do minuto de pico dividido pelo volume típico da tarde. A linha tracejada é 1×, o normal da tarde.</li>
+    <li>Painel B: % dos pregões em que o preço andou mais no minuto do pico do que no minuto antes. A faixa cinza (50% ± 3) é o que o acaso daria.</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Olhamos todos os horários redondos, de 9h30 às 17h30. No painel de cima, o volume: de manhã, os picos chegam a 4 vezes o volume da tarde, e os maiores coincidem com divulgações de dados dos Estados Unidos, como inflação e emprego, às 9h30 ou 10h30 de Brasília, dependendo do horário de verão americano. No painel de baixo, comparamos cada dia com ele mesmo: em que porcentagem dos pregões o preço andou mais no minuto do pico do que no minuto antes. No mini índice, isso acontece acima do acaso em 15 de 17 horários, chegando a 65% às 10h. No mini dólar, em 7 de 17. E no minuto antes do pico, a variação típica é zero: o preço não avisa para que lado vai."</p>
+  <p class="trans"><b>Transição:</b> "Se o pico mexe mais o preço, a pergunta seguinte é: depois dele, o preço segue na mesma direção?"</p>
+</div>
+
+<div class="card o">
+  <h3>Slide 5 · Depois do pico, o preço continua tanto quanto num minuto comum</h3>
+  <div class="meta">1,5 min · João Gabriel · gráfico: % em que o preço segue a direção do pico, 15 minutos depois</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>Bolinha colorida = minuto de pico, com a margem de erro. Traço cinza = minutos comuns da mesma hora, que são a referência.</li>
+    <li>As bolinhas ficam em cima dos traços cinzas: o pico não é diferente.</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Aqui medimos em que porcentagem dos pregões o preço, 15 minutos depois, está do mesmo lado do movimento do minuto de pico. O ponto importante é comparar com o traço cinza, que é a mesma conta feita em minutos comuns da mesma hora. Em quase todos os horários, a bolinha fica em cima do traço, dentro da margem de erro. Somando todos os horários, a diferença é de no máximo 0,4 ponto percentual. Ao mesmo tempo, a faixa onde o preço termina é mais larga depois do pico. Ou seja: o pico muda o tamanho do movimento, não a direção."</p>
+  <p class="trans"><b>Transição:</b> "Na última etapa, o professor pediu para separar os dias de alta e de baixa."</p>
+</div>
+
+<div class="card k">
+  <h3>Slide 6 · Separando dias de alta e de baixa</h3>
+  <div class="meta">2,0 min · João Gabriel · gráfico: preço em volta do minuto de maior volume do pregão, T−1 a T+15</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>T−1 é a base (zero). Roxo = dias de alta, laranja = dias de baixa, tracejado cinza = todos os dias juntos.</li>
+    <li>O salto acontece entre T−1 e T (o próprio minuto do pico) e se mantém até T+15.</li>
+    <li>O terceiro painel é o índice dolarizado (Ibovespa em dólar, como o estrangeiro enxerga).</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Aqui o T é o minuto de maior volume do pregão, e acompanhamos o preço até 15 minutos depois. A linha cinza mostra todos os dias juntos: fica perto de zero porque metade dos dias sobe e metade cai, e uma coisa anula a outra. Separando, o padrão aparece: nos dias de alta, o mini índice sobe 112 pontos no próprio minuto do pico; nos de baixa, cai 110. Há um pequeno respiro em T+3, mas o preço não reverte, e no índice dolarizado o movimento ainda cresce até T+15. Por janela de 30 minutos, o efeito é maior de manhã. Mas atenção: só sabemos se o dia foi de alta no fechamento. Então isso descreve o que acontece, não é um sinal que dê para operar."</p>
+  <p class="trans"><b>Transição:</b> "Por fim, olhamos quem está do outro lado: o fluxo por tipo de investidor."</p>
+</div>
+
+<div class="card k">
+  <h3>Slide 7 · Fluxo de investidores e conclusões</h3>
+  <div class="meta">1,5 min · Gabriel Camargo e João Gabriel · gráfico: saldo acumulado estrangeiro × pessoa física</div>
+  <div class="lbl">Apontar</div>
+  <ul>
+    <li>Linha roxa = estrangeiro, laranja = pessoa física, saldo acumulado em R$ bilhões. Quando uma sobe, a outra tende a cair.</li>
+    <li>O subtítulo traz a correlação diária (−0,57) e os dias com sinais opostos (68%).</li>
+  </ul>
+  <div class="lbl">Fala sugerida</div>
+  <p class="fala">"Este é o fluxo diário de compras menos vendas na B3, com dados públicos do último ano. O estrangeiro chegou a acumular cerca de 70 bilhões em abril e devolveu boa parte depois, enquanto a pessoa física foi no sentido contrário: em 68% dos dias, um compra enquanto o outro vende. Esse período não coincide com os nossos candles, então não cruzamos com o preço; fica como próximo passo. Para fechar: os dados estão prontos e auditados, com o último ano guardado. Volume alto, sozinho, não identifica o big player nem prevê direção. O pico de volume diz quanto o preço vai mexer, não para onde. Para separar o big player do resto do mercado, o próximo passo é usar dados negócio a negócio, que mostram quem agrediu. Obrigado, ficamos à disposição."</p>
+</div>
+
+<h2 class="pb">4. Números de bolso</h2>
+<table>
+  <tr><th>Assunto</th><th>Número</th></tr>
+  <tr><td>Dados de exploração</td><td>WDO: 575.144 candles, 1.038 pregões (09/2020 a 04/2025). WIN: 617.846 candles, 1.119 pregões (10/2020 a 09/2025)</td></tr>
+  <tr><td>Hold-out (trancado)</td><td>Últimos 12 meses: WDO a partir de 02/04/2025, WIN a partir de 26/09/2025</td></tr>
+  <tr><td>Maior buraco nos dados</td><td>jun a set/2023: 75 pregões no WDO e 93 no WIN</td></tr>
+  <tr><td>Candles utilizáveis</td><td>99,90% (WDO) e 99,99% (WIN)</td></tr>
+  <tr><td>Gate 1</td><td>46 testes, nenhum passa. Melhor: A1 no WDO, +1,34 bps em 15 min, p = 0,0145 (limite 0,0017). No WIN: +0,95 bps, p = 0,176</td></tr>
+  <tr><td>Volume nos picos</td><td>Até 4,2× o volume da tarde (WDO 10h). No WIN, o maior pico é às 10h30, com quase 80 mil contratos no minuto</td></tr>
+  <tr><td>Minuto do pico mexe mais</td><td>WIN: 15 de 17 horários acima do acaso (máximo 65%, 10h). WDO: 7 de 17</td></tr>
+  <tr><td>Pico do pregão, T+15</td><td>WDO +2,5 / −4,0 pt · WIN +95 / −105 pt · dolarizado +27,0 / −28,7 pt (alta / baixa)</td></tr>
+  <tr><td>Fluxo de investidores</td><td>245 pregões (11/11/2025 a 06/11/2026), correlação −0,57, sinais opostos em 68% dos dias</td></tr>
+  <tr><td>Unidades</td><td>WDO: tick 0,5 pt, 1 pt = R$ 10 por contrato. WIN: tick 5 pt, 1 pt = R$ 0,20 por contrato</td></tr>
+</table>
+
+<h2>5. Perguntas prováveis</h2>
+<table>
+  <tr><th style="width:34%">Pergunta</th><th>Resposta curta</th></tr>
+  <tr><td>Por que mediana e não média?</td><td>Poucos dias de notícia (CPI, payroll, Fed) têm movimentos enormes que puxam a média. A mediana mostra o dia típico.</td></tr>
+  <tr><td>O que é o hold-out e por que não usaram?</td><td>São os últimos 12 meses, separados antes de tudo. Se usássemos para explorar, não teríamos mais um teste honesto. Só abrem uma vez, para validar uma regra escrita antes.</td></tr>
+  <tr><td>Por que o Gate 1 deu no-go se o A1 tinha p = 0,0145?</td><td>Com muitos testes, algum dá p baixo por acaso. A correção de Bonferroni exigia p &lt; 0,0017, e o A1 não se repetiu no mini índice.</td></tr>
+  <tr><td>Por que comparar com o "minuto comum"?</td><td>Porque o preço tem comportamentos próprios em qualquer minuto (por exemplo, o fechamento alterna entre compra e venda). O pico só é especial se fugir do que acontece num minuto comum da mesma hora.</td></tr>
+  <tr><td>Então dá para ganhar dinheiro com isso?</td><td>Não com estes dados. A direção depois do pico é ~50/50, e o efeito de alta × baixa só se conhece no fim do dia. O movimento típico é de 1 tick, menor que o custo.</td></tr>
+  <tr><td>O que é o índice dolarizado?</td><td>1000 × WIN ÷ WDO: o Ibovespa medido em dólar, que é como o investidor estrangeiro vê o mercado brasileiro.</td></tr>
+  <tr><td>Por que não cruzaram o fluxo com o preço?</td><td>Os dados gratuitos de fluxo cobrem nov/2025 a nov/2026, e os nossos candles terminam em abr/2025 (WDO) e set/2025 (WIN). Não há período em comum.</td></tr>
+  <tr><td>O que mudaria com dado negócio a negócio?</td><td>Ele mostra se cada negócio foi uma compra ou venda agressiva e o tamanho real das ordens, o que permite separar o big player dos robôs que só fazem volume.</td></tr>
+</table>
+
+<h2>6. Dicas de apresentação</h2>
+<div class="two">
+  <div>
+    <ul>
+      <li>Fale <b>"tamanho, não direção"</b> como a ideia que amarra os slides 4 a 7.</li>
+      <li>Diga sempre a unidade: pontos ou bps, e de qual ativo. Não compare pontos do WDO com pontos do WIN.</li>
+      <li>Mostre as limitações com tranquilidade: resultado negativo bem medido também é resultado.</li>
+    </ul>
+  </div>
+  <div>
+    <ul>
+      <li>Aponte o gráfico antes de citar o número, para a turma saber onde olhar.</li>
+      <li>Evite ler os tópicos do slide: use a fala sugerida como base e conte com suas palavras.</li>
+      <li>Para refazer os PDFs depois de mudar dados ou textos: <code>bash docs/apresentacao-final/build.sh</code>.</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>
