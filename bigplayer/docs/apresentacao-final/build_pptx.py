@@ -14,7 +14,7 @@ from pathlib import Path
 
 from lxml import etree
 from pptx import Presentation
-from pptx.chart.data import CategoryChartData, XyChartData
+from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION, XL_TICK_MARK
 from pptx.enum.dml import MSO_LINE, MSO_PATTERN
@@ -174,12 +174,25 @@ def hline(slide, x1, y1, x2, y2, color=GRID, w=0.75, dash=False):
     return ln
 
 
+def hatch(shp):
+    """Listras diagonais (hold-out). O Google Apresentações mostra só a cor de fundo."""
+    shp.fill.patterned()
+    shp.fill.pattern = MSO_PATTERN.WIDE_UPWARD_DIAGONAL
+    shp.fill.fore_color.rgb = rgb(MUTED)
+    shp.fill.back_color.rgb = rgb("E9E4DC")
+    return shp
+
+
 def legend(slide, x, y, items, gap=22, size=9.5):
-    """items: (tipo, cor, rótulo); tipo em rect | dot | line | dash | err | tick | band."""
+    """items: (tipo, cor, rótulo); tipo em rect | outline | hold | dot | line | dash | err | tick | band."""
     cx = x
     for kind, col, lab in items:
         if kind in ("rect", "band"):
             rect(slide, cx + 2, y + 2, 16, 11, col)
+        elif kind == "outline":
+            rect(slide, cx + 2, y + 2, 16, 11, col, line=INK, line_w=1)
+        elif kind == "hold":
+            hatch(rect(slide, cx + 2, y + 2, 16, 11, "E9E4DC", line=INK2, line_w=0.75))
         elif kind == "dot":
             oval(slide, cx + 10, y + 8, 5, col)
         elif kind in ("line", "dash"):
@@ -189,7 +202,7 @@ def legend(slide, x, y, items, gap=22, size=9.5):
             oval(slide, cx + 10, y + 8, 5, col)
         elif kind == "tick":
             hline(slide, cx + 3, y + 8, cx + 19, y + 8, col, 3)
-        w = len(lab) * size * 0.62 + 6
+        w = len(lab) * size * 0.75 + 16  # largura média de caractere ≈ 0,75 × corpo em pt, em px, com folga
         text(slide, cx + 27, y, w, 16, lab, size=size, color=INK)
         cx += 27 + w + gap
 
@@ -430,11 +443,7 @@ def slide2(prs):
         ex0, ho0, ho1 = sx(m["exploration"]["start"]), sx(m["holdout_start"]), sx(m["holdout"]["end"])
         text(s, ox + 10, ry - 34, 300, 20, name, size=11.5, bold=True)
         rect(s, ex0, ry, ho0 - ex0, bh, col)
-        h = rect(s, ho0, ry, ho1 - ho0, bh, "E9E4DC", line=INK2, line_w=0.75)
-        h.fill.patterned()
-        h.fill.pattern = MSO_PATTERN.WIDE_UPWARD_DIAGONAL
-        h.fill.fore_color.rgb = rgb(MUTED)
-        h.fill.back_color.rgb = rgb("E9E4DC")
+        hatch(rect(s, ho0, ry, ho1 - ho0, bh, "E9E4DC", line=INK2, line_w=0.75))
         for b in BUR[k]:
             bx = sx(b["start"])
             rect(s, bx, ry - 4, max(3, sx(b["end"]) - bx), bh + 8, PINK)
@@ -449,7 +458,7 @@ def slide2(prs):
         text(s, bx - 80, ry - 24, 160, 16, f"buraco: {int(big['trading_days'])} pregões", size=9.5, bold=True,
              color="B03A5F", align=PP_ALIGN.CENTER)
     legend(s, x0, 548, [("rect", PURPLE, "exploração WDO"), ("rect", ORANGE, "exploração WIN"),
-                        ("band", MUTED, "hold-out (últimos 12 meses)"), ("rect", PINK, "buraco nos dados")], gap=16)
+                        ("hold", None, "hold-out (últimos 12 meses)"), ("rect", PINK, "buraco nos dados")], gap=16)
     text(s, 50, 600, 800, 30, "Fonte: reports/split_manifest*.json e reports/buracos_*.csv · exploração WDO 17/09/2020–01/04/2025, "
          "WIN 15/10/2020–25/09/2025", size=9, color=MUTED)
     side(s, 880, 112, 350, "O que fizemos", [
@@ -464,72 +473,57 @@ def slide3(prs):
     s = frame(prs, 3, "Etapa 2 · Gate 1: estudo de evento (out/2026)",
               "O pico de fluxo não previu a direção do preço: Gate 1 deu no-go", NOTES[3])
     chart_head(s, 50, 108, 800, "Efeito de seguir a direção do evento, 15 minutos depois",
-               "retorno na direção do evento menos o de minutos comuns parecidos (controle), em bps · barra = intervalo de confiança de 95% (bootstrap por dia)")
-    nome = {"E1": "E1 · volume anômalo (z ≥ 3)", "E2": "E2 · volume + lote grande", "E3": "E3 · volume alto por 5 min",
-            "P1": "P1 · fluxo persistente", "X1": "X1 · pressão no extremo", "A1": "A1 · pausa com volume"}
+               "retorno na direção do evento menos o de minutos comuns parecidos (controle), em bps · barra = efeito, "
+               "traço = intervalo de confiança de 95% (bootstrap por dia)")
+    nome = {"E1": "E1 volume anômalo (z ≥ 3)", "E2": "E2 volume + lote grande", "E3": "E3 volume alto por 5 min",
+            "P1": "P1 fluxo persistente", "X1": "X1 pressão no extremo", "A1": "A1 pausa com volume"}
 
     def pick(rows, ev):
         return find(rows, evento=ev, h_min=15.0)
 
-    groups = [("WDO · rodada 1", PURPLE, [(pick(EV_WDO, e), 0) for e in ("E1", "E2", "E3")]),
-              ("WDO · rodada 2", PURPLE, [(pick(EV_R2, "P1"), 0), (pick(EV_R2, "X1"), 0), (pick(EV_R2, "A1"), 1)]),
-              ("WIN · rodada 1", ORANGE, [(pick(EV_WIN, e), 0) for e in ("E1", "E2", "E3")]),
-              ("WIN · confirmação", ORANGE, [(pick(EV_CONF, "A1"), 1)])]
-    GH, TOT = 0.75, 10 + 4 * 0.75
-    cx, cy, cw, chh = 50, 168, 800, 440
-    fx, fy, fw, fh = 250 / cw, 34 / chh, 390 / cw, 360 / chh  # área de plotagem interna
-    p_left, p_top, p_w, p_h = cx + fx * cw, cy + fy * chh, fw * cw, fh * chh
-    ypx = lambda v: p_top + (TOT - v) / TOT * p_h
-    pts = {PURPLE: [], ORANGE: []}
-    pos = 0.0
-    for gname, col, rows in groups:
-        text(s, 60, ypx(TOT - pos - GH / 2) - 9, 230, 18, gname, size=10, bold=True,
-             color=PURPLE if col == PURPLE else ORANGE_TXT)
-        pos += GH
-        for r, hl in rows:
-            yv = TOT - pos - 0.5
-            yc = ypx(yv)
-            if hl:
-                rect(s, 54, yc - 12, 790, 24, MINT, rounded=True, radius=0.25, transparency=35)
-            text(s, 74, yc - 9, 220, 18, nome[r["evento"]], size=10)
-            text(s, cx + 680, yc - 9, 70, 18, br(r["p"], 3 if r["p"] < 0.1 else 2), size=10,
-                 bold=bool(hl), align=PP_ALIGN.CENTER)
-            pts[col].append((r["efeito_bps"], yv, r["ic95_sup"] - r["efeito_bps"], r["efeito_bps"] - r["ic95_inf"]))
-            pos += 1
-    text(s, cx + 680, p_top - 26, 70, 16, "p-valor", size=9.5, bold=True, color=INK2, align=PP_ALIGN.CENTER)
-    cd = XyChartData()
-    for col, lab in ((PURPLE, "WDO"), (ORANGE, "WIN")):
-        ser = cd.add_series(lab)
-        for xv, yv, *_ in pts[col]:
-            ser.add_data_point(xv, yv)
-    ch = chart(s, XL_CHART_TYPE.XY_SCATTER, cd, cx, cy, cw, chh)
-    manual_layout(ch, fx, fy, fw, fh)
-    xa, ya = ch.category_axis, ch.value_axis
-    xa.minimum_scale, xa.maximum_scale, xa.major_unit = -4, 3, 1
-    xa.has_major_gridlines = True
-    xa.major_gridlines.format.line.color.rgb = rgb(GRID)
-    xa.major_gridlines.format.line.width = Pt(0.75)
-    xa.tick_labels.number_format = '"+"0;"−"0;0'
-    xa.tick_labels.number_format_is_linked = False
-    xa.format.line.color.rgb = rgb(INK)
-    xa.major_tick_mark = XL_TICK_MARK.NONE
-    xa.has_title = True
-    xa.axis_title.text_frame.text = "efeito em 15 min (bps): retorno na direção do evento − controle"
-    tr = xa.axis_title.text_frame.paragraphs[0].runs[0].font
+    # Barras horizontais nativas: os nomes ficam no eixo de categorias e se alinham em qualquer programa.
+    rows = [("WDO", pick(EV_WDO, "E1")), ("WDO", pick(EV_WDO, "E2")), ("WDO", pick(EV_WDO, "E3")),
+            ("WDO", pick(EV_R2, "P1")), ("WDO", pick(EV_R2, "X1")), ("WDO", pick(EV_R2, "A1")),
+            ("WIN", pick(EV_WIN, "E1")), ("WIN", pick(EV_WIN, "E2")), ("WIN", pick(EV_WIN, "E3")),
+            ("WIN", pick(EV_CONF, "A1"))]
+    # O gráfico de barras desenha a 1ª categoria embaixo; inverter a lista (e não o eixo, que o Google
+    # ignora) deixa WDO E1 no topo em qualquer programa.
+    rows = rows[::-1]
+    cats = []
+    for ativo, r in rows:
+        extra = " (confirmação)" if ativo == "WIN" and r["evento"] == "A1" else ""
+        cats.append(f"{ativo} · {nome[r['evento']]}{extra} · p = {br(r['p'], 3 if r['p'] < 0.1 else 2)}")
+    cd = CategoryChartData(number_format="0.00")
+    cd.categories = cats
+    for ativo in ("WDO", "WIN"):
+        cd.add_series(ativo, [r["efeito_bps"] if a == ativo else None for a, r in rows])
+    ch = chart(s, XL_CHART_TYPE.BAR_CLUSTERED, cd, 50, 160, 800, 444, size=9.5)
+    style_axes(ch, -4, 3, 1, '"+"0;"−"0;0')
+    va = ch.value_axis
+    va.has_title = True
+    va.axis_title.text_frame.text = "efeito em 15 min (bps): retorno na direção do evento − controle"
+    tr = va.axis_title.text_frame.paragraphs[0].runs[0].font
     tr.size, tr.bold, tr.color.rgb, tr.name = Pt(9.5), False, rgb(INK2), FONT
-    ya.minimum_scale, ya.maximum_scale = 0, TOT
-    ya.has_major_gridlines = False
-    ya.tick_label_position = XL_TICK_LABEL_POSITION.NONE
-    ya.major_tick_mark = XL_TICK_MARK.NONE
-    ya.format.line.color.rgb = rgb(INK)
-    ya.format.line.width = Pt(1.25)
-    for ser, col in zip(ch.plots[0].series, (PURPLE, ORANGE)):
-        style_series(ser, col, no_line=True, msize=9)
-        error_bars(ser, [p[2] for p in pts[col]], [p[3] for p in pts[col]], direction="x")
-    legend(s, 60, 612, [("err", PURPLE, "WDO: efeito e IC 95%"), ("err", ORANGE, "WIN: efeito e IC 95%"),
-                        ("band", MINT, "A1: candidato que não se confirmou")], gap=16)
-    text(s, 50, 640, 800, 30, "Fonte: reports/estudo_evento_*.csv e confirmacao_a1_win.csv · limite com correção de "
-         "Bonferroni: p < 0,0033 (rodada 1) e p < 0,0017 (rodada 2)", size=9, color=MUTED)
+    pl = ch.plots[0]
+    pl.gap_width, pl.overlap = 70, 100
+    for ser, ativo, col in zip(pl.series, ("WDO", "WIN"), (PURPLE, ORANGE)):
+        ser.invert_if_negative = False
+        ser.format.fill.solid()
+        ser.format.fill.fore_color.rgb = rgb(col)
+        error_bars(ser, [r["ic95_sup"] - r["efeito_bps"] if a == ativo else 0 for a, r in rows],
+                   [r["efeito_bps"] - r["ic95_inf"] if a == ativo else 0 for a, r in rows])
+        for i, (a, r) in enumerate(rows):
+            if a == ativo and r["evento"] == "A1":   # o candidato que não se confirmou
+                pf = ser.points[i].format
+                pf.fill.solid()
+                pf.fill.fore_color.rgb = rgb(MINT)
+                pf.line.color.rgb = rgb(col)
+                pf.line.width = Pt(2)
+    legend(s, 60, 612, [("rect", PURPLE, "WDO"), ("rect", ORANGE, "WIN"),
+                        ("outline", MINT, "A1: único positivo, não passou o limite e não se confirmou"),
+                        ("err", MUTED, "IC 95%")], gap=18)
+    text(s, 50, 640, 800, 30, "Fonte: reports/estudo_evento_*.csv e confirmacao_a1_win.csv · E1–E3: rodada 1 · P1, X1 e A1: "
+         "rodada 2 · limite com correção de Bonferroni: p < 0,0033 (rodada 1) e p < 0,0017 (rodada 2)", size=9, color=MUTED)
     side(s, 880, 112, 350, "Como testamos", [
         [B("Regras escritas antes de ver o resultado "), N("(pré-registro): 6 definições de evento, 5 horizontes, 2 ativos.")],
         [N("Entrada no candle seguinte, saída no mesmo pregão, sem olhar o futuro.")],
@@ -557,22 +551,23 @@ def slide4(prs):
         cd.add_series(lab, [find(PICOS[a], horario=h)["volume_x_tarde"] for h in HORAS])
     ch = chart(s, XL_CHART_TYPE.COLUMN_CLUSTERED, cd, ax, ay, aw, ah)
     manual_layout(ch, fx, fy, fw, fh)
-    style_axes(ch, 0, 4.5, 1, '0"×"')
+    style_axes(ch, 0, 5, 1, '0.0"×"')  # o Google usa passos de 0,5 aqui; com uma casa decimal não repete 1×, 1×…
     ch.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.NONE
     pl = ch.plots[0]
     pl.gap_width, pl.overlap = 45, -5
     for ser, col in zip(pl.series, (PURPLE, ORANGE)):
         ser.format.fill.solid()
         ser.format.fill.fore_color.rgb = rgb(col)
-    y1 = ay + (fy + fh * (1 - 1 / 4.5)) * ah
+    y1 = ay + (fy + fh * (1 - 1 / 5)) * ah
     hline(s, ax + fx * aw, y1, ax + (fx + fw) * aw, y1, INK2, 1.25, dash=True)
     # painel B: % mexeu mais (linhas)
     text(s, 50, 352, 1100, 18, "B · % dos pregões em que o preço andou mais no minuto do pico (T) que no minuto antes (T−1)",
          size=10.5, bold=True)
     bx, by, bw, bh = 50, 372, 1180, 228
     fy2, fh2 = 8 / bh, 186 / bh
-    band_top = by + (fy2 + fh2 * (1 - (53 - 44) / 24)) * bh
-    band_bot = by + (fy2 + fh2 * (1 - (47 - 44) / 24)) * bh
+    lo, span = 45, 25  # eixo de 45% a 70%
+    band_top = by + (fy2 + fh2 * (1 - (53 - lo) / span)) * bh
+    band_bot = by + (fy2 + fh2 * (1 - (47 - lo) / span)) * bh
     rect(s, bx + fx * bw, band_top, fw * bw, band_bot - band_top, BAND)
     cd = CategoryChartData()
     cd.categories = labels
@@ -580,13 +575,12 @@ def slide4(prs):
         cd.add_series(lab, [find(PICOS[a], horario=h)["pico_maior_pct"] for h in HORAS])
     ch = chart(s, XL_CHART_TYPE.LINE_MARKERS, cd, bx, by, bw, bh)
     manual_layout(ch, fx, fy2, fw, fh2)
-    style_axes(ch, 44, 68, 5, '0"%"')
-    ch.value_axis.minimum_scale = 44
+    style_axes(ch, lo, lo + span, 5, '0"%"')
     for ser, col in zip(ch.plots[0].series, (PURPLE, ORANGE)):
         style_series(ser, col, width=1.75, msize=8)
     win = ch.plots[0].series[1]
-    point_label(win, 1, f"WIN 10h: {br(find(PICOS['win'], horario='10:00')['pico_maior_pct'], 1)}%", ORANGE_TXT, XL_LABEL_POSITION.RIGHT)
-    y50 = by + (fy2 + fh2 * (1 - (50 - 44) / 24)) * bh
+    point_label(win, 1, f"WIN 10h: {br(find(PICOS['win'], horario='10:00')['pico_maior_pct'], 1)}%", ORANGE_TXT, XL_LABEL_POSITION.ABOVE)
+    y50 = by + (fy2 + fh2 * (1 - (50 - lo) / span)) * bh
     hline(s, bx + fx * bw, y50, bx + (fx + fw) * bw, y50, INK2, 1, dash=True)
     strip(s, [
         (WHITE, [B("Volume: ", PURPLE), N("picos às 9h30–12h, até 4,2× a tarde. Os maiores movimentos caem em divulgações dos EUA (CPI, payroll).")]),
@@ -611,9 +605,7 @@ def slide5(prs):
         cd.add_series("minuto comum", [r["normal_continua_pct"] for r in rows])
         ch = chart(s, XL_CHART_TYPE.LINE_MARKERS, cd, 50, y + 18, 800, 194)
         manual_layout(ch, 50 / 800, 6 / 194, 740 / 800, 160 / 194)
-        style_axes(ch, 36, 58, 5, '0"%"')
-        ch.value_axis.minimum_scale, ch.value_axis.maximum_scale = 36, 58
-        ch.value_axis.major_unit = 5
+        style_axes(ch, 35, 60, 5, '0"%"')
         if i == 0:
             ch.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.NONE
         pico, normal = ch.plots[0].series
@@ -637,9 +629,10 @@ def slide6(prs):
               "Separando dias de alta e de baixa, o movimento aparece e não reverte", NOTES[6])
     chart_head(s, 50, 102, 1180, "Preço em volta do minuto de maior volume do pregão, de T−1 a T+15",
                "mediana da variação do fechamento contra T−1 (1 minuto antes do pico), em pontos, no mesmo pregão · dia de alta = último fechamento acima da primeira abertura")
-    cfg = [("wdo", "WDO · mini dólar", "pontos (1 pt = R$ 10/contrato)", 2, (-6.5, 4.5), 2),
-           ("win", "WIN · mini índice", "pontos (1 pt = R$ 0,20/contrato)", 1, (-140, 140), 50),
-           ("dolarizado", "Índice dolarizado (1000 × WIN ÷ WDO)", "pontos do Ibovespa em US$", 1, (-36, 36), 10)]
+    # limites múltiplos do passo, senão as marcas do eixo saem tortas (−6,5; −4,5…)
+    cfg = [("wdo", "WDO · mini dólar", "pontos (1 pt = R$ 10/contrato)", 2, (-8, 6), 2),
+           ("win", "WIN · mini índice", "pontos (1 pt = R$ 0,20/contrato)", 1, (-150, 150), 50),
+           ("dolarizado", "Índice dolarizado (1000 × WIN ÷ WDO)", "pontos do Ibovespa em US$", 1, (-40, 40), 10)]
     offs = [-1.0, 0.0, 3.0, 5.0, 10.0, 15.0]
     cats = ["T−1", "T (pico)", "T+3", "T+5", "T+10", "T+15"]
     for j, (k, name, unit, dec, lim, unit_step) in enumerate(cfg):
@@ -720,14 +713,21 @@ def slide7(prs):
         el = etree.Element(qn(tag))
         el.set("val", "42")
         (nm.addprevious if nm is not None else catAx.append)(el)
+    bp = ch.category_axis._element.find(qn("c:txPr")).find(qn("a:bodyPr"))
+    bp.set("rot", "0")      # datas na horizontal (o Google inclinava)
+    bp.set("vert", "horz")
     se, sp = ch.plots[0].series
     style_series(se, PURPLE, width=2.5, marker=XL_MARKER_STYLE.NONE)
     style_series(sp, ORANGE, width=2.5, marker=XL_MARKER_STYLE.NONE)
+    # Sem rótulos nos pontos: num gráfico de 245 pontos o Google distorcia a linha. Os valores vão na legenda.
     imax = max(range(n), key=lambda i: acc_e[i])
-    point_label(se, imax, f"pico: R$ {br(acc_e[imax], 0)} bi", PURPLE, XL_LABEL_POSITION.ABOVE)
-    point_label(se, n - 1, f"R$ {br(acc_e[-1], 0)} bi", PURPLE, XL_LABEL_POSITION.RIGHT)
-    point_label(sp, n - 1, f"R$ {br(acc_p[-1], 0)} bi", ORANGE_TXT, XL_LABEL_POSITION.RIGHT)
-    legend(s, 110, 594, [("line", PURPLE, "investidor estrangeiro"), ("line", ORANGE, "pessoa física")], gap=30)
+    d_pico = cats[imax].split("/")
+    meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+    legend(s, 60, 594, [
+        ("line", PURPLE, f"estrangeiro: pico R$ {br(acc_e[imax], 0)} bi ({meses[int(d_pico[1]) - 1]}/{d_pico[2]}), "
+                         f"hoje R$ {br(acc_e[-1], 0)} bi"),
+        ("line", ORANGE, f"pessoa física: hoje R$ {br(acc_p[-1], 0)} bi"),
+    ], gap=24)
     text(s, 50, 622, 740, 30, "Fonte: dadosdemercado.com.br/fluxo (página pública) · período nov/2025–nov/2026, sem sobreposição "
          "com os candles, por isso não foi cruzado com o preço", size=9, color=MUTED)
     side(s, 820, 112, 410, "Conclusões do projeto", [
