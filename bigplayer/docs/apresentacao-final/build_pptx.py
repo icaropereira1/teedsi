@@ -35,6 +35,11 @@ D12 = BP / "docs" / "apresentacao-12-11" / "dados"
 OUT = HERE / "Big_Player_apresentacao_final.pptx"
 GRAF = HERE / "graficos"
 SCALE = 4  # pixels de imagem por px do slide (1280 × 720)
+# Coordenadas e corpos de letra são escritos para um slide de 1280 × 720 px; ESCALA os amplia para
+# outro tamanho (1,5 = 1920 × 1080, o da apresentação unificada). NUMERO e TOTAL controlam o rodapé.
+ESCALA = 1.0
+NUMERO: dict[int, int] = {}
+TOTAL = 7
 
 FONT = "Segoe UI"
 SURFACE, INK, INK2, GRID = "F1EEE9", "1A1A1A", "5C5852", "DAD5CD"
@@ -87,7 +92,11 @@ def find(rows, **kw):
 
 # ---------------------------------------------------------------- primitivas (coordenadas em px de 1280 × 720)
 def px(v: float) -> Emu:
-    return Emu(int(round(v * 9525)))
+    return Emu(int(round(v * 9525 * ESCALA)))
+
+
+def pt(v: float) -> Pt:
+    return Pt(v * ESCALA)
 
 
 def rgb(h: str) -> RGBColor:
@@ -115,7 +124,7 @@ def text(slide, x, y, w, h, runs, size=11, color=INK, bold=False, align=PP_ALIGN
             r.text = t
             f = r.font
             f.name = FONT
-            f.size = Pt(o.get("size", size))
+            f.size = pt(o.get("size", size))
             f.bold = o.get("bold", bold)
             f.italic = o.get("italic", italic)
             f.color.rgb = rgb(o.get("color", color))
@@ -130,7 +139,7 @@ def bullets(slide, x, y, w, h, items, size=11, gap=7):
         pPr.set("marL", str(px(16)))
         pPr.set("indent", str(-px(16)))
         spc = etree.SubElement(pPr, qn("a:spcAft"))
-        etree.SubElement(spc, qn("a:spcPts")).set("val", str(gap * 100))
+        etree.SubElement(spc, qn("a:spcPts")).set("val", str(int(gap * 100 * ESCALA)))
         clr = etree.SubElement(pPr, qn("a:buClr"))
         etree.SubElement(clr, qn("a:srgbClr")).set("val", PINK)
         etree.SubElement(pPr, qn("a:buSzPct")).set("val", "90000")
@@ -154,7 +163,7 @@ def rect(slide, x, y, w, h, fill, line=None, rounded=False, radius=0.12, transpa
             etree.SubElement(sf[0], qn("a:alpha")).set("val", str(int((100 - transparency) * 1000)))
     if line:
         shp.line.color.rgb = rgb(line)
-        shp.line.width = Pt(line_w)
+        shp.line.width = pt(line_w)
     else:
         shp.line.fill.background()
     shp.shadow.inherit = False
@@ -168,7 +177,7 @@ def oval(slide, cx, cy, r, fill, line=INK):
     shp.fill.solid()
     shp.fill.fore_color.rgb = rgb(fill)
     shp.line.color.rgb = rgb(line)
-    shp.line.width = Pt(0.75)
+    shp.line.width = pt(0.75)
     shp.shadow.inherit = False
     return shp
 
@@ -176,7 +185,7 @@ def oval(slide, cx, cy, r, fill, line=INK):
 def hline(slide, x1, y1, x2, y2, color=GRID, w=0.75, dash=False):
     ln = slide.shapes.add_connector(1, px(x1), px(y1), px(x2), px(y2))
     ln.line.color.rgb = rgb(color)
-    ln.line.width = Pt(w)
+    ln.line.width = pt(w)
     if dash:
         ln.line.dash_style = MSO_LINE.DASH
     return ln
@@ -292,7 +301,7 @@ def frame(prs, n, kicker, title, notes):
         text(s, 50, 52, 1180, 44, title, size=24, bold=True, name="Título")
     hline(s, 50, 690, 1230, 690, GRID, 0.75)
     text(s, 50, 695, 300, 16, "Big Player · TEEDSI", size=9, color=MUTED)
-    text(s, 1130, 695, 100, 16, f"{n} / 7", size=9, color=MUTED, align=PP_ALIGN.RIGHT)
+    text(s, 1130, 695, 100, 16, f"{NUMERO.get(n, n)} / {TOTAL}", size=9, color=MUTED, align=PP_ALIGN.RIGHT)
     s.notes_slide.notes_text_frame.text = notes
     return s
 
@@ -321,7 +330,7 @@ def side(s, x, y, w, heading, items, box, box_small=None, box_y=None, size=11):
             r = p.add_run()
             r.text = t
             r.font.name = FONT
-            r.font.size = Pt(o["size"])
+            r.font.size = pt(o["size"])
             r.font.bold = o.get("bold", False)
             r.font.color.rgb = rgb(INK)
 
@@ -344,13 +353,19 @@ def N(t):
 
 
 # ================================================================ slides
-def slide1(prs):
-    s = frame(prs, 1, "TEEDSI · Data Science no mercado financeiro", None, NOTES[1])
-    text(s, 50, 112, 640, 80, "Big Player", size=48, bold=True, name="Título")
+def slide1(prs, capa: bool = True):
+    """capa=False: a mesma linha do tempo como roteiro, sem repetir título e nomes (apresentação unificada)."""
+    if capa:
+        s = frame(prs, 1, "TEEDSI · Data Science no mercado financeiro", None, NOTES[1])
+        text(s, 50, 112, 640, 80, "Big Player", size=48, bold=True, name="Título")
+    else:
+        s = frame(prs, 1, "Roteiro", None, NOTES_ROTEIRO)
+        text(s, 50, 112, 640, 80, "O caminho até aqui", size=44, bold=True, name="Título")
     text(s, 50, 196, 640, 70, "O que fizemos desde o início: dos dados brutos de 1 minuto até o preço nos "
          "picos de volume do mini dólar e do mini índice.", size=16, color=INK2, line=1.1)
-    text(s, 50, 290, 640, 50, [[N("Gabriel Camargo Silva · Ícaro Alves de Sá · João Gabriel Abreu Soares")],
-                               [("Novembro de 2026", {"color": INK2})]], size=12, line=1.3)
+    if capa:
+        text(s, 50, 290, 640, 50, [[N("Gabriel Camargo Silva · Ícaro Alves de Sá · João Gabriel Abreu Soares")],
+                                   [("Novembro de 2026", {"color": INK2})]], size=12, line=1.3)
     text(s, 730, 72, 500, 20, "LINHA DO TEMPO DO PROJETO", size=11, bold=True, color=INK2)
     steps = [
         (PURPLE, "Arquitetura e dados", "Tese do \"vácuo\", carga dos candles, hold-out de 12 meses trancado, calendário B3, buracos e rolagem."),
@@ -368,7 +383,7 @@ def slide1(prs):
         p = c.text_frame.paragraphs[0]
         p.alignment = PP_ALIGN.CENTER
         f = p.runs[0].font
-        f.size, f.bold, f.color.rgb, f.name = Pt(10), True, rgb(WHITE), FONT
+        f.size, f.bold, f.color.rgb, f.name = pt(10), True, rgb(WHITE), FONT
         c.text_frame.margin_left = c.text_frame.margin_right = c.text_frame.margin_top = c.text_frame.margin_bottom = 0
         text(s, 772, y + 2, 455, 20, head, size=12, bold=True)
         text(s, 772, y + 22, 455, 40, sub, size=10, color=INK2, line=1.05)
@@ -709,6 +724,16 @@ NOTES = {
        "Para separar o big player do resto do mercado, o próximo passo é usar dados negócio a negócio, que mostram quem agrediu. "
        "Obrigado, ficamos à disposição.",
 }
+
+
+NOTES_ROTEIRO = (
+    "Antes de entrar nos dados, o caminho que o projeto seguiu, em cinco etapas: preparar a base e trancar o último "
+    "ano, testar a hipótese do vácuo com regras escritas antes (o Gate 1), olhar o preço nos picos de volume em pontos, "
+    "como o professor pediu, separar dias de alta e de baixa junto com o fluxo de investidores e, por fim, a síntese. "
+    "Embaixo, a escala do trabalho: cerca de cinco anos de candles de 1 minuto, 46 testes pré-registrados e 12 meses "
+    "de dados ainda sem uso, guardados para o teste final.\n\n"
+    "Transição: \"Começando pelos dados.\""
+)
 
 
 def main() -> None:
