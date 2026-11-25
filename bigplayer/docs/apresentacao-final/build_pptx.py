@@ -1,22 +1,28 @@
 """Gera Big_Player_apresentacao_final.pptx: os mesmos 7 slides do PDF, editáveis.
 
-Gráficos nativos do PowerPoint (exceto a linha do tempo dos dados, feita com formas),
-lidos dos mesmos CSVs versionados que o build.sh usa. Falas sugeridas nas anotações.
-Requer: pip install python-pptx.   Rodar: python docs/apresentacao-final/build_pptx.py
+Gráficos desenhados com matplotlib e inseridos como PNG em 4× a resolução do slide (o Google
+Apresentações convertia os gráficos nativos em imagens borradas); a linha do tempo dos dados
+continua feita com formas. Os PNGs também ficam em graficos/. Dados: os mesmos CSVs versionados
+que o build.sh usa. Falas sugeridas nas anotações.
+Requer: pip install python-pptx matplotlib.   Rodar: python docs/apresentacao-final/build_pptx.py
 """
 from __future__ import annotations
 
 import csv
 import json
-from copy import deepcopy
 from datetime import date
+from io import BytesIO
 from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.ticker import FixedLocator, FuncFormatter  # noqa: E402
 
 from lxml import etree
 from pptx import Presentation
-from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
-from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION, XL_TICK_MARK
 from pptx.enum.dml import MSO_LINE, MSO_PATTERN
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
@@ -27,6 +33,8 @@ HERE = Path(__file__).resolve().parent
 BP = HERE.parent.parent
 D12 = BP / "docs" / "apresentacao-12-11" / "dados"
 OUT = HERE / "Big_Player_apresentacao_final.pptx"
+GRAF = HERE / "graficos"
+SCALE = 4  # pixels de imagem por px do slide (1280 × 720)
 
 FONT = "Segoe UI"
 SURFACE, INK, INK2, GRID = "F1EEE9", "1A1A1A", "5C5852", "DAD5CD"
@@ -207,116 +215,70 @@ def legend(slide, x, y, items, gap=22, size=9.5):
         cx += 27 + w + gap
 
 
-# ---------------------------------------------------------------- gráficos nativos
-def _noFill_spPr():
-    sp = etree.Element(qn("c:spPr"))
-    etree.SubElement(sp, qn("a:noFill"))
-    ln = etree.SubElement(sp, qn("a:ln"))
-    etree.SubElement(ln, qn("a:noFill"))
-    return sp
+# ---------------------------------------------------------------- gráficos (matplotlib → PNG em alta resolução)
+plt.rcParams.update({"font.family": FONT, "axes.unicode_minus": True, "svg.fonttype": "none"})
 
 
-def chart(slide, kind, data, x, y, w, h, size=9.5):
-    gf = slide.shapes.add_chart(kind, px(x), px(y), px(w), px(h), data)
-    ch = gf.chart
-    ch.font.name = FONT
-    ch.font.size = Pt(size)
-    ch.font.color.rgb = rgb(INK2)
-    ch.has_legend = False
-    cs = ch._chartSpace
-    txPr = cs.find(qn("c:txPr"))
-    (txPr.addprevious if txPr is not None else cs.append)(_noFill_spPr())
-    pa = cs.chart.plotArea
-    ext = pa.find(qn("c:extLst"))
-    (ext.addprevious if ext is not None else pa.append)(_noFill_spPr())
-    return ch
+def c(h: str) -> str:
+    return "#" + h
 
 
-def manual_layout(ch, x, y, w, h):
-    """Posição da área de plotagem interna em frações do quadro do gráfico."""
-    pa = ch._chartSpace.chart.plotArea
-    old = pa.find(qn("c:layout"))
-    if old is not None:
-        pa.remove(old)
-    lay = etree.Element(qn("c:layout"))
-    ml = etree.SubElement(lay, qn("c:manualLayout"))
-    for tag, val in (("layoutTarget", "inner"), ("xMode", "edge"), ("yMode", "edge"),
-                     ("x", x), ("y", y), ("w", w), ("h", h)):
-        etree.SubElement(ml, qn(f"c:{tag}")).set("val", str(val))
-    pa.insert(0, lay)
+def figure(w, h):
+    """Figura com o tamanho do quadro no slide: 1 px do slide = 1/96 pol., então os corpos em pt batem."""
+    return plt.figure(figsize=(w / 96, h / 96), dpi=96, facecolor=c(SURFACE))
 
 
-def style_axes(ch, vmin, vmax, unit, fmt="General", cat_size=9.5):
-    va = ch.value_axis
-    va.minimum_scale, va.maximum_scale, va.major_unit = vmin, vmax, unit
-    va.has_major_gridlines = True
-    va.major_gridlines.format.line.color.rgb = rgb(GRID)
-    va.major_gridlines.format.line.width = Pt(0.75)
-    va.format.line.fill.background()
-    va.major_tick_mark = XL_TICK_MARK.NONE
-    va.tick_labels.number_format = fmt
-    va.tick_labels.number_format_is_linked = False
-    ca = ch.category_axis
-    ca.format.line.color.rgb = rgb(INK)
-    ca.major_tick_mark = XL_TICK_MARK.NONE
-    ca.tick_labels.font.size = Pt(cat_size)
-    ca.tick_labels.font.color.rgb = rgb(INK)
-    ca.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+def axes(fig, w, h, left, top, aw, ah, ymin, ymax, step, fmt, grid_axis="y", size=9.5):
+    """Área de plotagem em px dentro do quadro w × h; eixo de valores com grade e sem traço."""
+    ax = fig.add_axes([left / w, 1 - (top + ah) / h, aw / w, ah / h])
+    ax.set_facecolor("none")
+    for side_ in ("top", "right", "left", "bottom"):
+        ax.spines[side_].set_visible(False)
+    base = ax.spines["left" if grid_axis == "x" else "bottom"]
+    base.set_visible(True)
+    base.set_color(c(INK))
+    base.set_linewidth(0.75)
+    ax.tick_params(length=0, labelsize=size, colors=c(INK2), pad=5)
+    ticks = [ymin + i * step for i in range(int(round((ymax - ymin) / step)) + 1)]
+    val = ax.xaxis if grid_axis == "x" else ax.yaxis
+    (ax.set_xlim if grid_axis == "x" else ax.set_ylim)(ymin, ymax)
+    val.set_major_locator(FixedLocator(ticks))
+    val.set_major_formatter(FuncFormatter(lambda v, _: fmt(v)))
+    ax.grid(axis=grid_axis, color=c(GRID), linewidth=0.75)
+    ax.set_axisbelow(True)
+    return ax
 
 
-def style_series(s, color, width=2.25, marker=XL_MARKER_STYLE.CIRCLE, msize=7, dash=False, no_line=False):
-    s.smooth = False
-    if no_line:
-        s.format.line.fill.background()
-    else:
-        s.format.line.color.rgb = rgb(color)
-        s.format.line.width = Pt(width)
-        if dash:
-            s.format.line.dash_style = MSO_LINE.DASH
-    s.marker.style = marker
-    if marker != XL_MARKER_STYLE.NONE:
-        s.marker.size = msize
-        s.marker.format.fill.solid()
-        s.marker.format.fill.fore_color.rgb = rgb(color)
-        s.marker.format.line.color.rgb = rgb(INK if marker == XL_MARKER_STYLE.CIRCLE else color)
-        s.marker.format.line.width = Pt(0.75)
+def cat_axis(ax, labels, show=True, size=9.5):
+    ax.set_xlim(-0.5, len(labels) - 0.5)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels if show else [""] * len(labels), fontsize=size, color=c(INK))
 
 
-def error_bars(series, plus, minus, direction=None, color=INK):
-    """Barras de erro personalizadas (nativas do PowerPoint)."""
-    eb = etree.Element(qn("c:errBars"))
-    if direction:
-        etree.SubElement(eb, qn("c:errDir")).set("val", direction)
-    etree.SubElement(eb, qn("c:errBarType")).set("val", "both")
-    etree.SubElement(eb, qn("c:errValType")).set("val", "cust")
-    etree.SubElement(eb, qn("c:noEndCap")).set("val", "0")
-    for tag, vals in (("c:plus", plus), ("c:minus", minus)):
-        node = etree.SubElement(etree.SubElement(eb, qn(tag)), qn("c:numLit"))
-        etree.SubElement(node, qn("c:formatCode")).text = "General"
-        etree.SubElement(node, qn("c:ptCount")).set("val", str(len(vals)))
-        for i, v in enumerate(vals):
-            pt = etree.SubElement(node, qn("c:pt"))
-            pt.set("idx", str(i))
-            etree.SubElement(pt, qn("c:v")).text = f"{v:.6f}"
-    sp = etree.SubElement(eb, qn("c:spPr"))
-    ln = etree.SubElement(sp, qn("a:ln"))
-    ln.set("w", "15875")
-    etree.SubElement(etree.SubElement(ln, qn("a:solidFill")), qn("a:srgbClr")).set("val", color)
-    ser = series._element
-    anchor = next(ser.iter(qn("c:cat"), qn("c:val"), qn("c:xVal"), qn("c:yVal")))
-    anchor.addprevious(eb)
+def axis_title(ax, label, which="y", size=9):
+    kw = dict(fontsize=size, color=c(INK2), labelpad=6)
+    (ax.set_ylabel if which == "y" else ax.set_xlabel)(label, **kw)
 
 
-def point_label(series, idx, label, color, pos, size=9, bold=True):
-    dl = series.points[idx].data_label
-    dl.position = pos
-    tf = dl.text_frame
-    tf.text = label
-    r = tf.paragraphs[0].runs[0]
-    r.font.size = Pt(size)
-    r.font.bold = bold
-    r.font.color.rgb = rgb(color)
-    r.font.name = FONT
+def picture(slide, fig, x, y, w, h, name):
+    """Salva a figura em SCALE× a resolução do slide e a insere no quadro (x, y, w, h)."""
+    GRAF.mkdir(exist_ok=True)
+    buf = BytesIO()
+    fig.savefig(buf, format="png", dpi=96 * SCALE, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    (GRAF / f"{name}.png").write_bytes(buf.getvalue())
+    buf.seek(0)
+    pic = slide.shapes.add_picture(buf, px(x), px(y), px(w), px(h))
+    pic.name = f"Gráfico {name}"
+    return pic
+
+
+def fmt_int(v):
+    return br(v, 0)
+
+
+def fmt_signed(v):
+    return br(v, 0, True)
 
 
 # ---------------------------------------------------------------- moldura comum
@@ -481,44 +443,31 @@ def slide3(prs):
     def pick(rows, ev):
         return find(rows, evento=ev, h_min=15.0)
 
-    # Barras horizontais nativas: os nomes ficam no eixo de categorias e se alinham em qualquer programa.
     rows = [("WDO", pick(EV_WDO, "E1")), ("WDO", pick(EV_WDO, "E2")), ("WDO", pick(EV_WDO, "E3")),
             ("WDO", pick(EV_R2, "P1")), ("WDO", pick(EV_R2, "X1")), ("WDO", pick(EV_R2, "A1")),
             ("WIN", pick(EV_WIN, "E1")), ("WIN", pick(EV_WIN, "E2")), ("WIN", pick(EV_WIN, "E3")),
             ("WIN", pick(EV_CONF, "A1"))]
-    # O gráfico de barras desenha a 1ª categoria embaixo; inverter a lista (e não o eixo, que o Google
-    # ignora) deixa WDO E1 no topo em qualquer programa.
-    rows = rows[::-1]
     cats = []
     for ativo, r in rows:
         extra = " (confirmação)" if ativo == "WIN" and r["evento"] == "A1" else ""
         cats.append(f"{ativo} · {nome[r['evento']]}{extra} · p = {br(r['p'], 3 if r['p'] < 0.1 else 2)}")
-    cd = CategoryChartData(number_format="0.00")
-    cd.categories = cats
-    for ativo in ("WDO", "WIN"):
-        cd.add_series(ativo, [r["efeito_bps"] if a == ativo else None for a, r in rows])
-    ch = chart(s, XL_CHART_TYPE.BAR_CLUSTERED, cd, 50, 160, 800, 444, size=9.5)
-    style_axes(ch, -4, 3, 1, '"+"0;"−"0;0')
-    va = ch.value_axis
-    va.has_title = True
-    va.axis_title.text_frame.text = "efeito em 15 min (bps): retorno na direção do evento − controle"
-    tr = va.axis_title.text_frame.paragraphs[0].runs[0].font
-    tr.size, tr.bold, tr.color.rgb, tr.name = Pt(9.5), False, rgb(INK2), FONT
-    pl = ch.plots[0]
-    pl.gap_width, pl.overlap = 70, 100
-    for ser, ativo, col in zip(pl.series, ("WDO", "WIN"), (PURPLE, ORANGE)):
-        ser.invert_if_negative = False
-        ser.format.fill.solid()
-        ser.format.fill.fore_color.rgb = rgb(col)
-        error_bars(ser, [r["ic95_sup"] - r["efeito_bps"] if a == ativo else 0 for a, r in rows],
-                   [r["efeito_bps"] - r["ic95_inf"] if a == ativo else 0 for a, r in rows])
-        for i, (a, r) in enumerate(rows):
-            if a == ativo and r["evento"] == "A1":   # o candidato que não se confirmou
-                pf = ser.points[i].format
-                pf.fill.solid()
-                pf.fill.fore_color.rgb = rgb(MINT)
-                pf.line.color.rgb = rgb(col)
-                pf.line.width = Pt(2)
+    W, H = 800, 444
+    fig = figure(W, H)
+    ax = axes(fig, W, H, 330, 8, 456, 384, -4, 3, 1, fmt_signed, grid_axis="x")
+    for i, (ativo, r) in enumerate(rows):
+        col = PURPLE if ativo == "WDO" else ORANGE
+        a1 = r["evento"] == "A1"   # o candidato que não se confirmou
+        ax.barh(i, r["efeito_bps"], height=0.58, color=c(MINT if a1 else col),
+                edgecolor=c(col), linewidth=2 if a1 else 0, zorder=2)
+        ax.errorbar(r["efeito_bps"], i, xerr=[[r["efeito_bps"] - r["ic95_inf"]], [r["ic95_sup"] - r["efeito_bps"]]],
+                    fmt="none", ecolor=c(INK), elinewidth=1.25, capsize=3, capthick=1.25, zorder=3)
+    ax.set_ylim(len(rows) - 0.5, -0.5)   # WDO E1 no topo
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels(cats, fontsize=9.5, color=c(INK))
+    ax.axvline(0, color=c(INK), linewidth=0.75, zorder=1)
+    ax.spines["left"].set_visible(False)
+    axis_title(ax, "efeito em 15 min (bps): retorno na direção do evento − controle", which="x", size=9.5)
+    picture(s, fig, 50, 160, W, H, "slide3_gate1")
     legend(s, 60, 612, [("rect", PURPLE, "WDO"), ("rect", ORANGE, "WIN"),
                         ("outline", MINT, "A1: único positivo, não passou o limite e não se confirmou"),
                         ("err", MUTED, "IC 95%")], gap=18)
@@ -543,45 +492,32 @@ def slide4(prs):
     labels = [h.lstrip("0").replace(":00", "h").replace(":", "h") for h in HORAS]
     # painel A: volume × tarde (colunas)
     text(s, 50, 176, 1100, 18, "A · volume no minuto do pico ÷ volume típico da tarde", size=10.5, bold=True)
-    ax, ay, aw, ah = 50, 194, 1180, 150
-    fx, fy, fw, fh = 50 / aw, 6 / ah, 1120 / aw, 120 / ah
-    cd = CategoryChartData()
-    cd.categories = labels
-    for a, lab in (("wdo", "WDO"), ("win", "WIN")):
-        cd.add_series(lab, [find(PICOS[a], horario=h)["volume_x_tarde"] for h in HORAS])
-    ch = chart(s, XL_CHART_TYPE.COLUMN_CLUSTERED, cd, ax, ay, aw, ah)
-    manual_layout(ch, fx, fy, fw, fh)
-    style_axes(ch, 0, 5, 1, '0.0"×"')  # o Google usa passos de 0,5 aqui; com uma casa decimal não repete 1×, 1×…
-    ch.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.NONE
-    pl = ch.plots[0]
-    pl.gap_width, pl.overlap = 45, -5
-    for ser, col in zip(pl.series, (PURPLE, ORANGE)):
-        ser.format.fill.solid()
-        ser.format.fill.fore_color.rgb = rgb(col)
-    y1 = ay + (fy + fh * (1 - 1 / 5)) * ah
-    hline(s, ax + fx * aw, y1, ax + (fx + fw) * aw, y1, INK2, 1.25, dash=True)
+    W, H = 1180, 150
+    fig = figure(W, H)
+    ax = axes(fig, W, H, 50, 6, 1120, 120, 0, 5, 1, lambda v: f"{br(v, 0)}×")
+    cat_axis(ax, labels, show=False)
+    for k, (a, col) in enumerate((("wdo", PURPLE), ("win", ORANGE))):
+        vals = [find(PICOS[a], horario=h)["volume_x_tarde"] for h in HORAS]
+        ax.bar([i + (k - 0.5) * 0.35 for i in range(len(HORAS))], vals, width=0.33, color=c(col), zorder=2)
+    ax.axhline(1, color=c(INK2), linewidth=1.25, linestyle=(0, (4, 3)), zorder=3)
+    picture(s, fig, 50, 194, W, H, "slide4a_volume")
     # painel B: % mexeu mais (linhas)
     text(s, 50, 352, 1100, 18, "B · % dos pregões em que o preço andou mais no minuto do pico (T) que no minuto antes (T−1)",
          size=10.5, bold=True)
-    bx, by, bw, bh = 50, 372, 1180, 228
-    fy2, fh2 = 8 / bh, 186 / bh
-    lo, span = 45, 25  # eixo de 45% a 70%
-    band_top = by + (fy2 + fh2 * (1 - (53 - lo) / span)) * bh
-    band_bot = by + (fy2 + fh2 * (1 - (47 - lo) / span)) * bh
-    rect(s, bx + fx * bw, band_top, fw * bw, band_bot - band_top, BAND)
-    cd = CategoryChartData()
-    cd.categories = labels
-    for a, lab in (("wdo", "WDO"), ("win", "WIN")):
-        cd.add_series(lab, [find(PICOS[a], horario=h)["pico_maior_pct"] for h in HORAS])
-    ch = chart(s, XL_CHART_TYPE.LINE_MARKERS, cd, bx, by, bw, bh)
-    manual_layout(ch, fx, fy2, fw, fh2)
-    style_axes(ch, lo, lo + span, 5, '0"%"')
-    for ser, col in zip(ch.plots[0].series, (PURPLE, ORANGE)):
-        style_series(ser, col, width=1.75, msize=8)
-    win = ch.plots[0].series[1]
-    point_label(win, 1, f"WIN 10h: {br(find(PICOS['win'], horario='10:00')['pico_maior_pct'], 1)}%", ORANGE_TXT, XL_LABEL_POSITION.ABOVE)
-    y50 = by + (fy2 + fh2 * (1 - (50 - lo) / span)) * bh
-    hline(s, bx + fx * bw, y50, bx + (fx + fw) * bw, y50, INK2, 1, dash=True)
+    W, H = 1180, 228
+    fig = figure(W, H)
+    ax = axes(fig, W, H, 50, 8, 1120, 186, 45, 70, 5, lambda v: f"{br(v, 0)}%")
+    cat_axis(ax, labels)
+    ax.axhspan(47, 53, color=c(BAND), zorder=0, linewidth=0)
+    ax.axhline(50, color=c(INK2), linewidth=1, linestyle=(0, (4, 3)), zorder=1)
+    for a, col in (("wdo", PURPLE), ("win", ORANGE)):
+        vals = [find(PICOS[a], horario=h)["pico_maior_pct"] for h in HORAS]
+        ax.plot(range(len(HORAS)), vals, color=c(col), linewidth=1.75, marker="o", markersize=8,
+                markeredgecolor=c(INK), markeredgewidth=0.75, zorder=3)
+    v10 = find(PICOS["win"], horario="10:00")["pico_maior_pct"]
+    ax.annotate(f"WIN 10h: {br(v10, 1)}%", (1, v10), xytext=(0, 8), textcoords="offset points", ha="center",
+                va="bottom", fontsize=9, fontweight="bold", color=c(ORANGE_TXT))
+    picture(s, fig, 50, 372, W, H, "slide4b_mexeu_mais")
     strip(s, [
         (WHITE, [B("Volume: ", PURPLE), N("picos às 9h30–12h, até 4,2× a tarde. Os maiores movimentos caem em divulgações dos EUA (CPI, payroll).")]),
         (WHITE, [B("WIN: ", ORANGE_TXT), N("o minuto do pico mexe mais em 15 de 17 horários (até 65% dos dias, às 10h). "), B("WDO: ", PURPLE), N("em 7 de 17.")]),
@@ -599,19 +535,18 @@ def slide5(prs):
         y = 166 + i * 216
         text(s, 50, y, 300, 18, name, size=11, bold=True)
         rows = [find(DEP[a], horario=h, minutos_depois=15.0) for h in HORAS]
-        cd = CategoryChartData()
-        cd.categories = labels
-        cd.add_series("pico", [r["continua_pct"] for r in rows])
-        cd.add_series("minuto comum", [r["normal_continua_pct"] for r in rows])
-        ch = chart(s, XL_CHART_TYPE.LINE_MARKERS, cd, 50, y + 18, 800, 194)
-        manual_layout(ch, 50 / 800, 6 / 194, 740 / 800, 160 / 194)
-        style_axes(ch, 35, 60, 5, '0"%"')
-        if i == 0:
-            ch.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.NONE
-        pico, normal = ch.plots[0].series
-        style_series(normal, MUTED, no_line=True, marker=XL_MARKER_STYLE.DASH, msize=12)
-        style_series(pico, col, no_line=True, msize=8)
-        error_bars(pico, [r["margem_pct"] for r in rows], [r["margem_pct"] for r in rows])
+        W, H = 800, 194
+        fig = figure(W, H)
+        ax = axes(fig, W, H, 50, 6, 740, 160, 35, 60, 5, lambda v: f"{br(v, 0)}%")
+        cat_axis(ax, labels, show=i == 1)
+        xs = range(len(HORAS))
+        ax.errorbar(xs, [r["continua_pct"] for r in rows], yerr=[r["margem_pct"] for r in rows], fmt="none",
+                    ecolor=c(INK), elinewidth=1.25, capsize=3, capthick=1.25, zorder=2)
+        ax.plot(xs, [r["normal_continua_pct"] for r in rows], linestyle="none", marker="_", markersize=14,
+                markeredgewidth=2.5, color=c(MUTED), zorder=3)
+        ax.plot(xs, [r["continua_pct"] for r in rows], linestyle="none", marker="o", markersize=8,
+                color=c(col), markeredgecolor=c(INK), markeredgewidth=0.75, zorder=4)
+        picture(s, fig, 50, y + 18, W, H, f"slide5_{a}_continua")
     legend(s, 60, 612, [("err", PURPLE, "pico WDO (± margem 95%)"), ("err", ORANGE, "pico WIN (± margem 95%)"),
                         ("tick", MUTED, "minuto comum da mesma hora")], gap=16)
     text(s, 50, 640, 800, 20, "Fonte: pt2/reports/depois_*.csv · margem = 1,96 × √(0,25 / casos), cerca de ±3 p.p.",
@@ -638,30 +573,25 @@ def slide6(prs):
     for j, (k, name, unit, dec, lim, unit_step) in enumerate(cfg):
         x = 50 + j * 400
         text(s, x, 152, 380, 20, name, size=11.5, bold=True)
-        cd = CategoryChartData()
-        cd.categories = cats
-        vals = {}
-        for t in ("alta", "baixa", "todos"):
-            vals[t] = [find(P30[(k, t)], grupo="DIA", offset=o)["mediana_pts"] for o in offs]
-        cd.add_series("dias de alta", vals["alta"])
-        cd.add_series("dias de baixa", vals["baixa"])
-        cd.add_series("todos os dias", vals["todos"])
-        ch = chart(s, XL_CHART_TYPE.LINE_MARKERS, cd, x, 174, 380, 360)
-        manual_layout(ch, 62 / 380, 10 / 360, 308 / 380, 300 / 360)
-        style_axes(ch, lim[0], lim[1], unit_step, '0;"−"0;0')
-        ch.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
-        va = ch.value_axis
-        va.has_title = True
-        va.axis_title.text_frame.text = unit
-        f = va.axis_title.text_frame.paragraphs[0].runs[0].font
-        f.size, f.bold, f.color.rgb, f.name = Pt(9), False, rgb(INK2), FONT
-        alta, baixa, todos = ch.plots[0].series
-        style_series(alta, PURPLE, width=2.5, msize=8)
-        style_series(baixa, ORANGE, width=2.5, msize=8)
-        style_series(todos, MUTED, width=1.75, msize=5, dash=True)
-        for i in range(1, 6):
-            point_label(alta, i, br(vals["alta"][i], dec, True), PURPLE, XL_LABEL_POSITION.ABOVE, size=8.5)
-            point_label(baixa, i, br(vals["baixa"][i], dec, True), ORANGE_TXT, XL_LABEL_POSITION.BELOW, size=8.5)
+        vals = {t: [find(P30[(k, t)], grupo="DIA", offset=o)["mediana_pts"] for o in offs]
+                for t in ("alta", "baixa", "todos")}
+        W, H = 380, 360
+        fig = figure(W, H)
+        ax = axes(fig, W, H, 62, 10, 308, 300, lim[0], lim[1], unit_step, fmt_int)
+        cat_axis(ax, cats)
+        axis_title(ax, unit)
+        xs = range(len(cats))
+        ax.axhline(0, color=c(INK2), linewidth=0.75, zorder=1)
+        ax.plot(xs, vals["todos"], color=c(MUTED), linewidth=1.75, linestyle=(0, (4, 3)), marker="o", markersize=5,
+                markeredgecolor=c(INK), markeredgewidth=0.75, zorder=2)
+        for t, col, txt, dy in (("alta", PURPLE, PURPLE, 7), ("baixa", ORANGE, ORANGE_TXT, -7)):
+            ax.plot(xs, vals[t], color=c(col), linewidth=2.5, marker="o", markersize=8,
+                    markeredgecolor=c(INK), markeredgewidth=0.75, zorder=3)
+            for i in range(1, 6):
+                ax.annotate(br(vals[t][i], dec, True), (i, vals[t][i]), xytext=(0, dy), textcoords="offset points",
+                            ha="center", va="bottom" if dy > 0 else "top", fontsize=8.5, fontweight="bold",
+                            color=c(txt), zorder=4)
+        picture(s, fig, x, 174, W, H, f"slide6_{k}")
         n = lambda t: int(find(P30[(k, t)], grupo="DIA", offset=-1.0)["n"])
         text(s, x + 62, 540, 318, 16, f"n: {n('alta')} dias de alta · {n('baixa')} de baixa", size=9, color=INK2)
     legend(s, 112, 566, [("line", PURPLE, "dias de alta (fechamento > abertura)"), ("line", ORANGE, "dias de baixa"),
@@ -695,31 +625,18 @@ def slide7(prs):
         acc_p.append(cp / 1000)
         y, m, d = r["data"].split("-")
         cats.append(f"{d}/{m}/{y[2:]}")
-    cd = CategoryChartData()
-    cd.categories = cats
-    cd.add_series("investidor estrangeiro", acc_e)
-    cd.add_series("pessoa física", acc_p)
-    ch = chart(s, XL_CHART_TYPE.LINE, cd, 50, 166, 740, 420)
-    manual_layout(ch, 60 / 740, 10 / 420, 610 / 740, 360 / 420)
-    style_axes(ch, -20, 80, 20, '0;"−"0;0')
-    va = ch.value_axis
-    va.has_title = True
-    va.axis_title.text_frame.text = "saldo acumulado (R$ bilhões)"
-    f = va.axis_title.text_frame.paragraphs[0].runs[0].font
-    f.size, f.bold, f.color.rgb, f.name = Pt(9), False, rgb(INK2), FONT
-    catAx = ch._chartSpace.chart.plotArea.find(qn("c:catAx"))
-    nm = catAx.find(qn("c:noMultiLvlLbl"))
-    for tag in ("c:tickLblSkip", "c:tickMarkSkip"):
-        el = etree.Element(qn(tag))
-        el.set("val", "42")
-        (nm.addprevious if nm is not None else catAx.append)(el)
-    bp = ch.category_axis._element.find(qn("c:txPr")).find(qn("a:bodyPr"))
-    bp.set("rot", "0")      # datas na horizontal (o Google inclinava)
-    bp.set("vert", "horz")
-    se, sp = ch.plots[0].series
-    style_series(se, PURPLE, width=2.5, marker=XL_MARKER_STYLE.NONE)
-    style_series(sp, ORANGE, width=2.5, marker=XL_MARKER_STYLE.NONE)
-    # Sem rótulos nos pontos: num gráfico de 245 pontos o Google distorcia a linha. Os valores vão na legenda.
+    W, H = 740, 420
+    fig = figure(W, H)
+    ax = axes(fig, W, H, 60, 10, 610, 360, -20, 80, 20, fmt_int)
+    axis_title(ax, "saldo acumulado (R$ bilhões)")
+    ax.set_xlim(-0.5, n - 0.5)
+    ticks = list(range(0, n, 42))
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([cats[i] for i in ticks], fontsize=9.5, color=c(INK))
+    ax.axhline(0, color=c(INK2), linewidth=0.75, zorder=1)
+    ax.plot(range(n), acc_e, color=c(PURPLE), linewidth=2.5, zorder=3)
+    ax.plot(range(n), acc_p, color=c(ORANGE), linewidth=2.5, zorder=3)
+    picture(s, fig, 50, 166, W, H, "slide7_fluxo")
     imax = max(range(n), key=lambda i: acc_e[i])
     d_pico = cats[imax].split("/")
     meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
