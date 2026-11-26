@@ -257,7 +257,8 @@ def plot_02_wdo_win_janelas_30min() -> None:
 # ==============================================================================
 # GRÁFICO 3: Índice Dolarizado (1000 * WIN / WDO) — Visão do Investidor Estrangeiro
 # ==============================================================================
-def plot_03_indice_dolarizado() -> None:
+def plot_03_indice_dolarizado(janelas: bool = True) -> None:
+    """janelas=False: só a trajetória minuto a minuto (painel esquerdo), sem as 18 janelas."""
     windows = [f"{h:02d}:{m:02d}" for h in range(9, 18) for m in (0, 30)]
     offsets = [-1, 0, 3, 5, 10, 15]
     x_off = list(range(len(offsets)))
@@ -266,9 +267,12 @@ def plot_03_indice_dolarizado() -> None:
     up = load_med("dolarizado", "alta")
     dn = load_med("dolarizado", "baixa")
 
-    fig, (ax_left, ax_right) = plt.subplots(
-        1, 2, figsize=(18.0, 6.8), gridspec_kw={"width_ratios": [1.08, 1.32], "wspace": 0.22}
-    )
+    if janelas:
+        fig, (ax_left, ax_right) = plt.subplots(
+            1, 2, figsize=(18.0, 6.8), gridspec_kw={"width_ratios": [1.08, 1.32], "wspace": 0.22}
+        )
+    else:
+        fig, ax_left = plt.subplots(figsize=(12.0, 7.2))
 
     # --- Painel Esquerdo: Trajetória T-1 a T+15 nas janelas da manhã vs Tarde ---
     sel_windows = [
@@ -316,46 +320,47 @@ def plot_03_indice_dolarizado() -> None:
     ax_left.set_title("Trajetória minuto a minuto (T−1 até T+15)", loc="left", fontsize=13.5, fontweight="bold", pad=10)
     ax_left.legend(loc="upper left", frameon=True, facecolor=SURFACE, edgecolor=INK, fontsize=8.3, ncols=2)
 
-    # --- Painel Direito: Todas as 18 janelas de 30 min (T vs T+15) ---
-    up_idx = up.set_index(["grupo", "offset"])
-    dn_idx = dn.set_index(["grupo", "offset"])
-    x_w = np.arange(len(windows))
-    bw = 0.36
+    if janelas:
+        # --- Painel Direito: Todas as 18 janelas de 30 min (T vs T+15) ---
+        up_idx = up.set_index(["grupo", "offset"])
+        dn_idx = dn.set_index(["grupo", "offset"])
+        x_w = np.arange(len(windows))
+        bw = 0.36
 
-    up_t0 = [up_idx.loc[(g, 0), "mediana_pts"] for g in windows]
-    up_t15 = [up_idx.loc[(g, 15), "mediana_pts"] for g in windows]
-    dn_t0 = [dn_idx.loc[(g, 0), "mediana_pts"] for g in windows]
-    dn_t15 = [dn_idx.loc[(g, 15), "mediana_pts"] for g in windows]
+        up_t0 = [up_idx.loc[(g, 0), "mediana_pts"] for g in windows]
+        up_t15 = [up_idx.loc[(g, 15), "mediana_pts"] for g in windows]
+        dn_t0 = [dn_idx.loc[(g, 0), "mediana_pts"] for g in windows]
+        dn_t15 = [dn_idx.loc[(g, 15), "mediana_pts"] for g in windows]
 
-    ax_right.axvspan(-0.5, 6.5, color="#E5E0D5", alpha=0.55, zorder=0)
-    ax_right.axvline(6.5, color=INK_2, ls="--", lw=1.0, zorder=1)
-    ax_right.axhline(0, color=INK, lw=1.2, zorder=4)
+        ax_right.axvspan(-0.5, 6.5, color="#E5E0D5", alpha=0.55, zorder=0)
+        ax_right.axvline(6.5, color=INK_2, ls="--", lw=1.0, zorder=1)
+        ax_right.axhline(0, color=INK, lw=1.2, zorder=4)
 
-    ax_right.bar(x_w - bw / 2, up_t0, width=bw, color="#B79CED", edgecolor=INK, lw=0.8, label="Alta · em T (pico)", zorder=3)
-    ax_right.bar(x_w + bw / 2, up_t15, width=bw, color=PURPLE, edgecolor=INK, lw=0.9, label="Alta · em T+15", zorder=3)
-    ax_right.bar(x_w - bw / 2, dn_t0, width=bw, color="#FAD089", edgecolor=INK, lw=0.8, label="Baixa · em T (pico)", zorder=3)
-    ax_right.bar(x_w + bw / 2, dn_t15, width=bw, color=ORANGE, edgecolor=INK, lw=0.9, label="Baixa · em T+15", zorder=3)
+        ax_right.bar(x_w - bw / 2, up_t0, width=bw, color="#B79CED", edgecolor=INK, lw=0.8, label="Alta · em T (pico)", zorder=3)
+        ax_right.bar(x_w + bw / 2, up_t15, width=bw, color=PURPLE, edgecolor=INK, lw=0.9, label="Alta · em T+15", zorder=3)
+        ax_right.bar(x_w - bw / 2, dn_t0, width=bw, color="#FAD089", edgecolor=INK, lw=0.8, label="Baixa · em T (pico)", zorder=3)
+        ax_right.bar(x_w + bw / 2, dn_t15, width=bw, color=ORANGE, edgecolor=INK, lw=0.9, label="Baixa · em T+15", zorder=3)
 
-    for idx_i in (0, 2, 3, 4, 5):
-        top_anchor = max(up_t15[idx_i], up_t0[idx_i])
-        bot_anchor = min(dn_t15[idx_i], dn_t0[idx_i])
-        ax_right.text(idx_i + bw / 2, top_anchor + 0.6, br(up_t15[idx_i], 1, plus=True),
-                      ha="center", va="bottom", fontsize=8.3, fontweight="bold", color=INK)
-        ax_right.text(idx_i + bw / 2, bot_anchor - 0.6, br(dn_t15[idx_i], 1, plus=True),
-                      ha="center", va="top", fontsize=8.3, fontweight="bold", color=INK)
+        for idx_i in (0, 2, 3, 4, 5):
+            top_anchor = max(up_t15[idx_i], up_t0[idx_i])
+            bot_anchor = min(dn_t15[idx_i], dn_t0[idx_i])
+            ax_right.text(idx_i + bw / 2, top_anchor + 0.6, br(up_t15[idx_i], 1, plus=True),
+                          ha="center", va="bottom", fontsize=8.3, fontweight="bold", color=INK)
+            ax_right.text(idx_i + bw / 2, bot_anchor - 0.6, br(dn_t15[idx_i], 1, plus=True),
+                          ha="center", va="top", fontsize=8.3, fontweight="bold", color=INK)
 
-    ax_right.text(
-        0.97, 0.14,
-        "De manhã, T+15 supera T em quase\ntodas as janelas: o movimento continua!",
-        transform=ax_right.transAxes, ha="right", va="bottom", fontsize=9.5, fontweight="bold",
-        bbox=dict(boxstyle="round,pad=0.45", fc=MINT_BOX, ec=INK, lw=1.1),
-    )
+        ax_right.text(
+            0.97, 0.14,
+            "De manhã, T+15 supera T em quase\ntodas as janelas: o movimento continua!",
+            transform=ax_right.transAxes, ha="right", va="bottom", fontsize=9.5, fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.45", fc=MINT_BOX, ec=INK, lw=1.1),
+        )
 
-    ax_right.set_xticks(x_w, windows, rotation=45, fontsize=9.5)
-    ax_right.set_ylim(-26, 26)
-    ax_right.set_xlim(-0.6, len(windows) - 0.4)
-    ax_right.set_title("As 18 janelas de 30 min: salto em T vs acumulação até T+15", loc="left", fontsize=13.5, fontweight="bold", pad=10)
-    ax_right.legend(loc="upper right", ncols=2, frameon=True, facecolor=SURFACE, edgecolor=INK, fontsize=8.8)
+        ax_right.set_xticks(x_w, windows, rotation=45, fontsize=9.5)
+        ax_right.set_ylim(-26, 26)
+        ax_right.set_xlim(-0.6, len(windows) - 0.4)
+        ax_right.set_title("As 18 janelas de 30 min: salto em T vs acumulação até T+15", loc="left", fontsize=13.5, fontweight="bold", pad=10)
+        ax_right.legend(loc="upper right", ncols=2, frameon=True, facecolor=SURFACE, edgecolor=INK, fontsize=8.8)
 
     fig.suptitle(
         "WIN/WDO · Índice Dolarizado (Ibovespa em US$): na manhã, o preço segue andando após o pico",
@@ -366,13 +371,14 @@ def plot_03_indice_dolarizado() -> None:
         "série = 1000 × WIN ÷ WDO (~22.200 pts) · T pelo pico de volume do WIN · 993 pregões comuns (524 de alta, 469 de baixa)",
         fontsize=11, color=INK_2,
     )
-    save_all(fig, "03_indice_dolarizado_manha_tarde.png")
+    save_all(fig, "03_indice_dolarizado_manha_tarde.png" if janelas else "03_indice_dolarizado_trajetoria.png")
 
 
 # ==============================================================================
 # GRÁFICO 4: Fluxo de Investidores (Estrangeiro x Pessoa Física) no padrão do PDF
 # ==============================================================================
-def plot_04_fluxo_investidores() -> None:
+def plot_04_fluxo_investidores(correlacao: bool = True) -> None:
+    """correlacao=False: só o fluxo acumulado, sem o painel da correlação móvel."""
     df = pd.read_csv(FLUX_CSV)
     df["data"] = pd.to_datetime(df["data"])
     df = df.sort_values("data").reset_index(drop=True)
@@ -383,9 +389,13 @@ def plot_04_fluxo_investidores() -> None:
     roll20 = df["estrangeiro"].rolling(20).corr(df["pessoa_fisica"])
     pct_opostos = ((df["estrangeiro"] * df["pessoa_fisica"]) < 0).mean() * 100
 
-    fig, (ax_top, ax_bot) = plt.subplots(
-        2, 1, figsize=(14.5, 8.2), sharex=True, gridspec_kw={"height_ratios": [2.1, 1.0], "hspace": 0.22}
-    )
+    if correlacao:
+        fig, (ax_top, ax_bot) = plt.subplots(
+            2, 1, figsize=(14.5, 8.2), sharex=True, gridspec_kw={"height_ratios": [2.1, 1.0], "hspace": 0.22}
+        )
+    else:
+        fig, ax_top = plt.subplots(figsize=(14.5, 6.0))
+        ax_bot = ax_top
 
     # --- Painel Superior: Fluxo Acumulado (R$ bilhões) ---
     ax_top.axhline(0, color=INK, lw=1.1, zorder=1)
@@ -454,38 +464,42 @@ def plot_04_fluxo_investidores() -> None:
         transform=ax_top.transAxes, fontsize=10.5, color=INK_2,
     )
 
-    # --- Painel Inferior: Correlação Móvel de 20 pregões ---
-    ax_bot.axhline(0, color=INK, lw=1.0, zorder=1)
-    ax_bot.axhline(corr_daily, color=INK, ls="--", lw=1.2, zorder=2)
-    ax_bot.text(df["data"].min() + pd.Timedelta(days=4), corr_daily - 0.16,
-                f"correlação geral = {br(corr_daily, 2)}", fontsize=9.5, fontweight="bold", color=INK)
+    if correlacao:
+        # --- Painel Inferior: Correlação Móvel de 20 pregões ---
+        ax_bot.axhline(0, color=INK, lw=1.0, zorder=1)
+        ax_bot.axhline(corr_daily, color=INK, ls="--", lw=1.2, zorder=2)
+        ax_bot.text(df["data"].min() + pd.Timedelta(days=4), corr_daily - 0.16,
+                    f"correlação geral = {br(corr_daily, 2)}", fontsize=9.5, fontweight="bold", color=INK)
 
-    ax_bot.fill_between(df["data"], 0, roll20, where=(roll20 <= 0), color=PINK, alpha=0.25, interpolate=True)
-    ax_bot.fill_between(df["data"], 0, roll20, where=(roll20 > 0), color=PURPLE, alpha=0.20, interpolate=True)
-    ax_bot.plot(df["data"], roll20, color=INK, lw=1.8, label="Correlação móvel (20 pregões)")
+        ax_bot.fill_between(df["data"], 0, roll20, where=(roll20 <= 0), color=PINK, alpha=0.25, interpolate=True)
+        ax_bot.fill_between(df["data"], 0, roll20, where=(roll20 > 0), color=PURPLE, alpha=0.20, interpolate=True)
+        ax_bot.plot(df["data"], roll20, color=INK, lw=1.8, label="Correlação móvel (20 pregões)")
 
-    idx_min_corr = int(roll20.idxmin())
-    d_min = df.loc[idx_min_corr, "data"]
-    ax_bot.scatter([d_min], [roll20.iloc[idx_min_corr]], s=50, color=PINK, edgecolor=INK, zorder=5)
-    ax_bot.annotate(
-        f"mínima (out/26): {br(roll20.iloc[idx_min_corr], 2)}",
-        xy=(d_min, roll20.iloc[idx_min_corr]),
-        xytext=(d_min - pd.Timedelta(days=70), -0.32),
-        fontsize=9.2, fontweight="bold", color=INK,
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=INK, lw=0.8),
-        arrowprops=dict(arrowstyle="->", color=INK, lw=1.0),
-    )
+        idx_min_corr = int(roll20.idxmin())
+        d_min = df.loc[idx_min_corr, "data"]
+        ax_bot.scatter([d_min], [roll20.iloc[idx_min_corr]], s=50, color=PINK, edgecolor=INK, zorder=5)
+        ax_bot.annotate(
+            f"mínima (out/26): {br(roll20.iloc[idx_min_corr], 2)}",
+            xy=(d_min, roll20.iloc[idx_min_corr]),
+            xytext=(d_min - pd.Timedelta(days=70), -0.32),
+            fontsize=9.2, fontweight="bold", color=INK,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=INK, lw=0.8),
+            arrowprops=dict(arrowstyle="->", color=INK, lw=1.0),
+        )
 
-    ax_bot.set_ylim(-1.08, 0.55)
-    ax_bot.set_yticks([-1.0, -0.5, 0.0, 0.5])
-    ax_bot.yaxis.set_major_formatter(mt.FuncFormatter(lambda v, _: br(v, 1)))
-    ax_bot.set_ylabel("correlação (20d)", fontsize=10.5)
-    ax_bot.set_title("Correlação móvel em janelas de 20 pregões", loc="left", fontsize=12.5, fontweight="bold", pad=6)
+        ax_bot.set_ylim(-1.08, 0.55)
+        ax_bot.set_yticks([-1.0, -0.5, 0.0, 0.5])
+        ax_bot.yaxis.set_major_formatter(mt.FuncFormatter(lambda v, _: br(v, 1)))
+        ax_bot.set_ylabel("correlação (20d)", fontsize=10.5)
+        ax_bot.set_title("Correlação móvel em janelas de 20 pregões", loc="left", fontsize=12.5, fontweight="bold", pad=6)
 
     ax_bot.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax_bot.xaxis.set_major_formatter(mdates.DateFormatter("%b/%Y"))
     ax_bot.set_xlim(df["data"].min() - pd.Timedelta(days=6), df["data"].max() + pd.Timedelta(days=26))
 
+    if not correlacao:
+        save_all(fig, "04_fluxo_estrangeiro_x_pf_sem_correlacao.png")
+        return
     save_all(fig, "04_fluxo_estrangeiro_x_pf.png")
     for dst in [
         DOC_DIR / "graficos" / "f1_estrangeiro_x_pf.png",
@@ -555,6 +569,8 @@ if __name__ == "__main__":
     plot_01_todos_vs_alta_baixa_dia()
     plot_02_wdo_win_janelas_30min()
     plot_03_indice_dolarizado()
+    plot_03_indice_dolarizado(janelas=False)
     plot_04_fluxo_investidores()
+    plot_04_fluxo_investidores(correlacao=False)
     plot_05_resumo_comparativo_ativos()
     print("Gráficos atualizados com sucesso!")
